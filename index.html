@@ -1,0 +1,4421 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EmbroideryBill — Embroidery Billing System</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --primary: #0F172A;
+      --accent: #F59E0B;
+      --bg: #F5EFE6;
+      --card: #FFFDF9;
+      --border: #E8D5B7;
+      --text: #1E293B;
+      --muted: #64748B;
+      --danger: #EF4444;
+      --success: #22C55E;
+      --warning: #F59E0B;
+      --info: #3B82F6
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh
+    }
+
+    /* Professional animated background */
+    @keyframes bgShift {
+      0% {
+        background-position: 0% 50%
+      }
+
+      50% {
+        background-position: 100% 50%
+      }
+
+      100% {
+        background-position: 0% 50%
+      }
+    }
+
+    @keyframes meshMove {
+      0% {
+        transform: translate(0, 0) rotate(0deg)
+      }
+
+      33% {
+        transform: translate(20px, -15px) rotate(1deg)
+      }
+
+      66% {
+        transform: translate(-10px, 20px) rotate(-1deg)
+      }
+
+      100% {
+        transform: translate(0, 0) rotate(0deg)
+      }
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(245, 158, 11, .08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(139, 90, 43, .07) 0%, transparent 50%),
+        radial-gradient(ellipse at 60% 10%, rgba(245, 158, 11, .05) 0%, transparent 40%),
+        radial-gradient(ellipse at 10% 80%, rgba(180, 83, 9, .06) 0%, transparent 40%),
+        linear-gradient(135deg, #F5EFE6 0%, #EDE0D0 50%, #F5EFE6 100%);
+      background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200%, 400% 400%;
+      animation: bgShift 12s ease infinite;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: -50px;
+      z-index: -1;
+      background-image:
+        repeating-linear-gradient(45deg, rgba(139, 90, 43, .04) 0px, rgba(139, 90, 43, .04) 1px, transparent 1px, transparent 28px),
+        repeating-linear-gradient(-45deg, rgba(139, 90, 43, .04) 0px, rgba(139, 90, 43, .04) 1px, transparent 1px, transparent 28px);
+      animation: meshMove 20s ease-in-out infinite;
+    }
+
+    .dark body::before {
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(245, 158, 11, .06) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(245, 158, 11, .04) 0%, transparent 50%),
+        linear-gradient(135deg, #0F172A 0%, #0d1424 50%, #0F172A 100%);
+      background-size: 200% 200%, 200% 200%, 400% 400%;
+      animation: bgShift 15s ease infinite;
+    }
+
+    .dark body::after {
+      background-image:
+        repeating-linear-gradient(45deg, rgba(245, 158, 11, .03) 0px, rgba(245, 158, 11, .03) 1px, transparent 1px, transparent 28px),
+        repeating-linear-gradient(-45deg, rgba(245, 158, 11, .03) 0px, rgba(245, 158, 11, .03) 1px, transparent 1px, transparent 28px);
+    }
+
+    /* Sidebar embroidery motif accent */
+    #sidebar::after {
+      content: '🧵';
+      position: absolute;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2rem;
+      opacity: .25;
+      pointer-events: none;
+    }
+
+    /* Card subtle fabric feel */
+    .card {
+      box-shadow: 0 2px 8px rgba(139, 90, 43, .08);
+      border-color: rgba(139, 90, 43, .15)
+    }
+
+    .kpi {
+      box-shadow: 0 2px 8px rgba(139, 90, 43, .08);
+      border-color: rgba(139, 90, 43, .15)
+    }
+
+    .dark {
+      --bg: #0F172A;
+      --card: #1E293B;
+      --border: #334155;
+      --text: #F1F5F9;
+      --muted: #94A3B8
+    }
+
+    /* Layout */
+    #app {
+      display: flex;
+      min-height: 100vh
+    }
+
+    #sidebar {
+      width: 240px;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      z-index: 100;
+      transition: transform .2s
+    }
+
+    #sidebar.hidden {
+      transform: translateX(-240px)
+    }
+
+    #sidebar .logo {
+      padding: 1.5rem 1.25rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-bottom: 1px solid rgba(255, 255, 255, .1)
+    }
+
+    #sidebar nav a {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .75rem 1.25rem;
+      color: rgba(255, 255, 255, .75);
+      text-decoration: none;
+      font-size: .9rem;
+      transition: background .15s
+    }
+
+    #sidebar nav a:hover,
+    #sidebar nav a.active {
+      background: rgba(245, 158, 11, .15);
+      color: var(--accent)
+    }
+
+    #topbar {
+      position: fixed;
+      top: 0;
+      left: 240px;
+      right: 0;
+      height: 56px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      z-index: 99;
+      transition: left .2s
+    }
+
+    #topbar.full {
+      left: 0
+    }
+
+    #main {
+      margin-left: 240px;
+      padding-top: 56px;
+      min-height: 100vh;
+      transition: margin-left .2s
+    }
+
+    #main.full {
+      margin-left: 0
+    }
+
+    .page {
+      display: none;
+      padding: 1.5rem
+    }
+
+    .page.active {
+      display: block
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: .75rem;
+      padding: 1.25rem
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem
+    }
+
+    .kpi {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: .75rem;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      min-width: 0;
+      overflow: hidden
+    }
+
+    .kpi>div:last-child {
+      min-width: 0;
+      flex: 1;
+      overflow: hidden
+    }
+
+    .kpi-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: .5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0
+    }
+
+    .kpi-val {
+      font-size: 1rem;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: block;
+      line-height: 1.3
+    }
+
+    .kpi-label {
+      font-size: .75rem;
+      color: var(--muted);
+      white-space: nowrap;
+      display: block
+    }
+
+    /* Table */
+    .table-wrap {
+      overflow-x: auto
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .875rem
+    }
+
+    th {
+      background: var(--bg);
+      padding: .75rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border)
+    }
+
+    td {
+      padding: .75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text)
+    }
+
+    tr:hover td {
+      background: rgba(0, 0, 0, .02)
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: .2rem .6rem;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 600
+    }
+
+    .badge-yellow {
+      background: #FEF9C3;
+      color: #854D0E
+    }
+
+    .badge-blue {
+      background: #DBEAFE;
+      color: #1E40AF
+    }
+
+    .badge-green {
+      background: #DCFCE7;
+      color: #166534
+    }
+
+    .badge-red {
+      background: #FEE2E2;
+      color: #991B1B
+    }
+
+    .badge-orange {
+      background: #FFEDD5;
+      color: #9A3412
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .5rem 1rem;
+      border-radius: .5rem;
+      font-size: .875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: opacity .15s
+    }
+
+    .btn:hover {
+      opacity: .85
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0F172A
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text)
+    }
+
+    .btn-sm {
+      padding: .3rem .7rem;
+      font-size: .8rem
+    }
+
+    /* Modal */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center
+    }
+
+    .overlay.open {
+      display: flex
+    }
+
+    .modal {
+      background: var(--card);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+      margin: 1rem
+    }
+
+    .modal h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem
+    }
+
+    /* Forms */
+    .form-group {
+      margin-bottom: 1rem
+    }
+
+    label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: .35rem
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: .55rem .75rem;
+      border: 1px solid var(--border);
+      border-radius: .5rem;
+      font-size: .875rem;
+      background: var(--card);
+      color: var(--text);
+      outline: none
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, .2)
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem
+    }
+
+    .total-box {
+      background: rgba(245, 158, 11, .1);
+      border: 1px solid rgba(245, 158, 11, .3);
+      border-radius: .5rem;
+      padding: .75rem 1rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin: .75rem 0
+    }
+
+    /* Search */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap
+    }
+
+    .search-bar input {
+      max-width: 280px
+    }
+
+    /* Page header */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: .75rem
+    }
+
+    .page-header h2 {
+      font-size: 1.3rem;
+      font-weight: 700
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #1E293B;
+      color: #fff;
+      padding: .75rem 1.25rem;
+      border-radius: .75rem;
+      font-size: .875rem;
+      z-index: 999;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .3)
+    }
+
+    /* Chart bars */
+    .chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 120px;
+      padding: .5rem 0
+    }
+
+    .bar-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      gap: 4px
+    }
+
+    .bar {
+      width: 100%;
+      background: var(--accent);
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height .3s
+    }
+
+    .bar-label {
+      font-size: .65rem;
+      color: var(--muted)
+    }
+
+    /* Animated background canvas */
+    #bg-canvas {
+      display: none
+    }
+
+    /* Hamburger */
+    #hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: .25rem;
+      color: var(--text)
+    }
+
+    /* ── ANIMATIONS ─────────────────────────────────────────────────────────────── */
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0)
+      }
+
+      20% {
+        transform: translateX(-4px)
+      }
+
+      40% {
+        transform: translateX(4px)
+      }
+
+      60% {
+        transform: translateX(-3px)
+      }
+
+      80% {
+        transform: translateX(3px)
+      }
+    }
+
+    @keyframes bounce {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      30% {
+        transform: translateY(-5px)
+      }
+
+      60% {
+        transform: translateY(-2px)
+      }
+    }
+
+    @keyframes ripple {
+      0% {
+        transform: scale(0);
+        opacity: .4
+      }
+
+      100% {
+        transform: scale(2.5);
+        opacity: 0
+      }
+    }
+
+    .btn-danger:hover {
+      animation: shake .35s ease
+    }
+
+    .btn-challan:hover {
+      animation: bounce .4s ease
+    }
+
+    /* Ripple effect on all buttons */
+    .btn {
+      position: relative;
+      overflow: hidden
+    }
+
+    .btn .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .35);
+      transform: scale(0);
+      animation: ripple .5s linear;
+      pointer-events: none
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-16px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0)
+      }
+    }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: scale(.92)
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1)
+      }
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0
+      }
+
+      100% {
+        background-position: 200% 0
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .6
+      }
+    }
+
+    @keyframes countUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    /* Page transition */
+    .page.active {
+      animation: fadeIn .25s ease both
+    }
+
+    /* KPI cards */
+    .kpi {
+      animation: popIn .3s ease both;
+      transition: transform .2s, box-shadow .2s
+    }
+
+    .kpi:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(139, 90, 43, .15) !important
+    }
+
+    .kpi-val {
+      animation: countUp .4s ease both
+    }
+
+    /* Cards */
+    .card {
+      transition: box-shadow .2s
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(139, 90, 43, .12) !important
+    }
+
+    /* Table rows */
+    tr {
+      transition: background .15s
+    }
+
+    /* Buttons */
+    .btn {
+      transition: opacity .15s, transform .1s, box-shadow .15s
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .12)
+    }
+
+    .btn:active {
+      transform: translateY(0);
+      box-shadow: none
+    }
+
+    /* Modal */
+    .overlay.open .modal {
+      animation: popIn .2s ease both
+    }
+
+    /* Sidebar links */
+    #sidebar nav a {
+      transition: background .15s, color .15s, padding-left .15s
+    }
+
+    #sidebar nav a:hover {
+      padding-left: 1.5rem
+    }
+
+    #sidebar nav a.active {
+      padding-left: 1.5rem
+    }
+
+    /* Toast */
+    #toast {
+      animation: slideIn .2s ease both
+    }
+
+    /* Badge */
+    .badge {
+      transition: transform .15s
+    }
+
+    .badge:hover {
+      transform: scale(1.08)
+    }
+
+    /* Chart bars */
+    .bar {
+      transition: height .5s cubic-bezier(.4, 0, .2, 1), opacity .3s
+    }
+
+    .bar:hover {
+      opacity: .8
+    }
+
+    /* Staggered table row animation */
+    tbody tr {
+      animation: fadeIn .2s ease both
+    }
+
+    tbody tr:nth-child(1) {
+      animation-delay: .03s
+    }
+
+    tbody tr:nth-child(2) {
+      animation-delay: .06s
+    }
+
+    tbody tr:nth-child(3) {
+      animation-delay: .09s
+    }
+
+    tbody tr:nth-child(4) {
+      animation-delay: .12s
+    }
+
+    tbody tr:nth-child(5) {
+      animation-delay: .15s
+    }
+
+    tbody tr:nth-child(6) {
+      animation-delay: .18s
+    }
+
+    tbody tr:nth-child(7) {
+      animation-delay: .21s
+    }
+
+    tbody tr:nth-child(8) {
+      animation-delay: .24s
+    }
+
+    /* Auth screen */
+    #auth-screen .modal,
+    #auth-screen>div {
+      animation: popIn .35s ease both
+    }
+
+    /* Sidebar open on mobile */
+    #sidebar {
+      transition: transform .25s cubic-bezier(.4, 0, .2, 1)
+    }
+
+    /* Input focus */
+    input:focus,
+    select:focus {
+      transition: border-color .15s, box-shadow .15s
+    }
+
+    /* Summary cards in expenses/inventory */
+    #expense-summary>div,
+    #inventory-summary>div,
+    #perday-summary>div {
+      animation: popIn .3s ease both;
+      transition: transform .2s;
+    }
+
+    #expense-summary>div:hover,
+    #inventory-summary>div:hover,
+    #perday-summary>div:hover {
+      transform: translateY(-2px);
+    }
+
+    @media(max-width:768px) {
+      #sidebar {
+        transform: translateX(-240px)
+      }
+
+      #sidebar.open {
+        transform: translateX(0)
+      }
+
+      #topbar {
+        left: 0
+      }
+
+      #main {
+        margin-left: 0
+      }
+
+      #hamburger {
+        display: block
+      }
+
+      .form-row {
+        grid-template-columns: 1fr
+      }
+
+      .staff-grid {
+        grid-template-columns: 1fr !important
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- AUTH SCREEN -->
+  <div id="auth-screen"
+    style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0F172A 0%,#1a0a2e 40%,#0F172A 100%);z-index:500;align-items:center;justify-content:center;background-image:repeating-linear-gradient(45deg,rgba(245,158,11,.04) 0px,rgba(245,158,11,.04) 1px,transparent 1px,transparent 16px),repeating-linear-gradient(-45deg,rgba(245,158,11,.04) 0px,rgba(245,158,11,.04) 1px,transparent 1px,transparent 16px);background-size:32px 32px">
+    <div
+      style="background:#1E293B;border:1px solid #334155;border-radius:1.25rem;padding:2.5rem 2rem;width:100%;max-width:400px;margin:1rem">
+      <div style="text-align:center;margin-bottom:1.75rem">
+        <div style="font-size:2.5rem">🧵</div>
+        <div style="font-size:1.4rem;font-weight:700;color:#F59E0B;margin-top:.5rem">EmbroideryBill</div>
+        <div style="color:#64748B;font-size:.85rem;margin-top:.25rem">Embroidery Billing System</div>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="login-form">
+        <div style="font-size:1.1rem;font-weight:700;color:#F1F5F9;margin-bottom:1.25rem;text-align:center">Sign In
+        </div>
+        <div class="form-group"><label style="color:#94A3B8">Email</label>
+          <input id="login-email" type="email" placeholder="you@example.com"
+            style="background:#0F172A;border-color:#334155;color:#F1F5F9" />
+        </div>
+        <div class="form-group"><label style="color:#94A3B8">Password</label>
+          <input id="login-password" type="password" placeholder="••••••••"
+            style="background:#0F172A;border-color:#334155;color:#F1F5F9" />
+        </div>
+        <div id="login-error" style="color:#EF4444;font-size:.8rem;margin-bottom:.75rem;display:none"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:.7rem" onclick="doLogin()">Sign
+          In</button>
+        <p style="text-align:center;margin-top:1rem;font-size:.85rem;color:#64748B">
+          Don't have an account? <a href="#" onclick="showSignup()" style="color:#F59E0B;text-decoration:none">Sign
+            Up</a>
+        </p>
+      </div>
+
+      <!-- SIGNUP FORM -->
+      <div id="signup-form" style="display:none">
+        <div style="font-size:1.1rem;font-weight:700;color:#F1F5F9;margin-bottom:1.25rem;text-align:center">Create
+          Account</div>
+        <div class="form-group"><label style="color:#94A3B8">Business Name</label>
+          <input id="signup-name" type="text" placeholder="Your shop name"
+            style="background:#0F172A;border-color:#334155;color:#F1F5F9" />
+        </div>
+        <div class="form-group"><label style="color:#94A3B8">Email</label>
+          <input id="signup-email" type="email" placeholder="you@example.com"
+            style="background:#0F172A;border-color:#334155;color:#F1F5F9" />
+        </div>
+        <div class="form-group"><label style="color:#94A3B8">Password</label>
+          <input id="signup-password" type="password" placeholder="Min 6 characters"
+            style="background:#0F172A;border-color:#334155;color:#F1F5F9" />
+        </div>
+        <div class="form-group"><label style="color:#94A3B8">Role</label>
+          <select id="signup-role" style="background:#0F172A;border-color:#334155;color:#F1F5F9">
+            <option value="admin">Admin</option>
+            <option value="staff">Staff</option>
+          </select>
+        </div>
+        <div id="signup-error" style="color:#EF4444;font-size:.8rem;margin-bottom:.75rem;display:none"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:.7rem"
+          onclick="doSignup()">Create Account</button>
+        <p style="text-align:center;margin-top:1rem;font-size:.85rem;color:#64748B">
+          Already have an account? <a href="#" onclick="showLogin()" style="color:#F59E0B;text-decoration:none">Sign
+            In</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="logo" style="display:flex;align-items:center;gap:.6rem;cursor:pointer" onclick="openLogoSettings()"
+      title="Click to change logo">
+      <div id="sidebar-logo-wrap"
+        style="width:36px;height:36px;border-radius:.4rem;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:1.3rem">
+        🧵</div>
+      <span id="sidebar-biz-name">EmbroideryBill</span>
+    </div>
+    <nav>
+      <a href="#" class="nav-link active" data-page="dashboard">📊 Dashboard</a>
+      <a href="#" class="nav-link" data-page="customers">👤 Customers</a>
+      <a href="#" class="nav-link" data-page="orders">🧵 Orders</a>
+      <a href="#" class="nav-link" data-page="payments">💳 Payments</a>
+      <a href="#" class="nav-link" data-page="inventory">🧶 Thread & Material</a>
+      <a href="#" class="nav-link" data-page="expenses">� Business Expenses</a>
+      <a href="#" class="nav-link" data-page="machines">⚙️ Machines</a>
+      <a href="#" class="nav-link" data-page="staff">👷 Staff & Salary</a>
+      <a href="#" class="nav-link" data-page="reports">📈 Reports</a>
+      <a href="#" class="nav-link" data-page="home-expenses" onclick="showHomeExpenses()">🏠 Personal Expenses</a>
+    </nav>
+  </div>
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <button id="hamburger" onclick="toggleSidebar()">☰</button>
+      <span style="font-weight:700;color:var(--accent)">🪡 EmbroideryBill</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <button class="btn btn-ghost btn-sm" onclick="toggleDark()">🌙</button>
+      <span id="topbar-user" style="font-size:.8rem;color:var(--muted)"></span>
+      <button class="btn btn-ghost btn-sm" onclick="exportData()" title="Export data to file">📤 Export</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-file').click()"
+        title="Import data from file">📥 Import</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)" />
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-icon" style="background:#FEF9C3">💰</div>
+          <div>
+            <div class="kpi-val" id="kpi-revenue">₹0</div>
+            <div class="kpi-label">Total Revenue</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon" style="background:#DBEAFE">📋</div>
+          <div>
+            <div class="kpi-val" id="kpi-today">0</div>
+            <div class="kpi-label">Today's Orders</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon" style="background:#FFEDD5">⏳</div>
+          <div>
+            <div class="kpi-val" id="kpi-pending">0</div>
+            <div class="kpi-label">Pending Orders</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon" style="background:#DCFCE7">✅</div>
+          <div>
+            <div class="kpi-val" id="kpi-completed">0</div>
+            <div class="kpi-label">Completed Orders</div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:1.25rem">
+        <div style="font-weight:600;margin-bottom:.75rem">Weekly Revenue</div>
+        <div class="chart" id="weekly-chart"></div>
+      </div>
+      <div class="card">
+        <div style="font-weight:600;margin-bottom:.75rem">Recent Orders</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Payment</th>
+              </tr>
+            </thead>
+            <tbody id="recent-orders-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS PAGE -->
+    <div class="page" id="page-customers">
+      <div class="page-header">
+        <h2>Customers</h2>
+        <button class="btn btn-primary" onclick="openCustomerModal()">+ Add Customer</button>
+      </div>
+      <div class="search-bar">
+        <input type="search" id="customer-search" placeholder="Search by name or phone…" oninput="renderCustomers()" />
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>GST No.</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="customers-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS PAGE -->
+    <div class="page" id="page-orders">
+      <div class="page-header">
+        <h2>Orders</h2>
+        <button class="btn btn-primary" onclick="openOrderModal()">+ New Order</button>
+      </div>
+      <div class="search-bar">
+        <input type="search" id="order-search" placeholder="Search by Order ID, customer, design…"
+          oninput="renderOrders()" />
+        <select id="order-status-filter" onchange="renderOrders()">
+          <option value="">All Status</option>
+          <option>Pending</option>
+          <option>In Progress</option>
+          <option>Completed</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Design</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>Delivery</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="orders-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS PAGE -->
+    <div class="page" id="page-payments">
+      <div class="page-header">
+        <h2>Payments</h2>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,.3)"
+            onclick="clearAllPayments()">🗑 Clear Payments</button>
+          <button class="btn btn-primary" onclick="openPaymentModal()">+ Record Payment</button>
+        </div>
+      </div>
+      <div id="outstanding-section" style="margin-bottom:1.25rem"></div>
+      <div class="search-bar">
+        <input type="search" id="payment-search" placeholder="Search by Order ID or customer…"
+          oninput="renderPayments()" />
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Amount Paid</th>
+                <th>Method</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="payments-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS PAGE -->
+    <div class="page" id="page-reports">
+      <div class="page-header">
+        <h2>Reports & Analytics</h2>
+      </div>
+
+      <!-- PER DAY REPORT -->
+      <div class="card" style="margin-bottom:1.25rem">
+        <div style="font-weight:600;margin-bottom:.75rem">📅 Per Day Report</div>
+        <div style="display:flex;align-items:flex-end;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+          <div>
+            <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:.3rem">Select Date</label>
+            <input type="date" id="perday-date" onchange="renderPerDayReport()" />
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="downloadPerDayReport()">📥 Download Day Report</button>
+        </div>
+        <div id="perday-summary"
+          style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-bottom:1rem">
+        </div>
+        <div id="perday-orders-wrap" style="display:none">
+          <div style="font-size:.85rem;font-weight:600;margin-bottom:.5rem;color:var(--muted)">Orders on this day</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Design</th>
+                  <th>Total (₹)</th>
+                  <th>Status</th>
+                  <th>Payment</th>
+                </tr>
+              </thead>
+              <tbody id="perday-orders-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="perday-payments-wrap" style="display:none;margin-top:1rem">
+          <div style="font-size:.85rem;font-weight:600;margin-bottom:.5rem;color:var(--muted)">Payments received on this
+            day</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Amount (₹)</th>
+                  <th>Method</th>
+                </tr>
+              </thead>
+              <tbody id="perday-payments-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="perday-salary-wrap" style="display:none;margin-top:1rem">
+          <div style="font-size:.85rem;font-weight:600;margin-bottom:.5rem;color:var(--muted)">Staff payments on this
+            day</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Staff</th>
+                  <th>Type</th>
+                  <th>Amount (₹)</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody id="perday-salary-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="perday-empty" style="text-align:center;color:var(--muted);padding:1.5rem;font-size:.875rem">Select a
+          date to view report</div>
+      </div>
+
+      <div class="card" style="margin-bottom:1.25rem">
+        <div style="font-weight:600;margin-bottom:.75rem">Monthly Revenue (Last 12 Months)</div>
+        <div class="chart" id="monthly-chart"></div>
+      </div>
+      <div class="card" style="margin-bottom:1.25rem">
+        <div style="font-weight:600;margin-bottom:.75rem">Top Customers</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Total Value</th>
+              </tr>
+            </thead>
+            <tbody id="top-customers-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:1.25rem">
+        <div style="font-weight:600;margin-bottom:.75rem">Pending Payments</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody id="pending-payments-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-weight:600;margin-bottom:1rem">📥 Download Reports</div>
+        <div style="margin-bottom:1rem;display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+          <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:.3rem">Date
+              From</label><input type="date" id="export-from" /></div>
+          <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:.3rem">Date To</label><input
+              type="date" id="export-to" /></div>
+          <div style="font-size:.75rem;color:var(--muted);padding-bottom:.3rem">Leave blank for all dates</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem">
+          <button class="btn btn-primary" onclick="downloadOrdersReport()"
+            style="justify-content:center;padding:.75rem">🧵 Orders Report (CSV)</button>
+          <button class="btn btn-primary" onclick="downloadPaymentsReport()"
+            style="justify-content:center;padding:.75rem;background:#3B82F6">� Payments Report (CSV)</button>
+          <button class="btn btn-primary" onclick="downloadSalaryReport()"
+            style="justify-content:center;padding:.75rem;background:#8B5CF6">👷 Staff Salary Report (CSV)</button>
+          <button class="btn btn-primary" onclick="downloadFullReport()"
+            style="justify-content:center;padding:.75rem;background:#059669">📊 Full Business Report (CSV)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAFF PAGE -->
+    <div class="page" id="page-staff">
+      <div class="page-header">
+        <h2>👷 Staff & Salary</h2>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,.3)"
+            onclick="clearSalaryHistory()">🗑 Clear Salary History</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,.3)"
+            onclick="clearAllStaff()">🗑 Clear All Staff</button>
+          <button class="btn btn-primary" onclick="openStaffModal()">+ Add Staff</button>
+        </div>
+      </div>
+
+      <!-- Staff list -->
+      <div class="card" style="margin-bottom:1.25rem">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+          <div style="font-weight:600">Staff Members</div>
+          <input type="search" id="staff-search" placeholder="Search staff…" oninput="renderStaffPage()"
+            style="max-width:220px;padding:.4rem .75rem;border:1px solid var(--border);border-radius:.5rem;font-size:.8rem;background:var(--card);color:var(--text)" />
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Monthly Salary (₹)</th>
+                <th>Phone</th>
+                <th>Join Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="staff-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Salary & Advance section -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem" class="staff-grid">
+        <div class="card">
+          <div style="font-weight:600;margin-bottom:.75rem">💰 Pay Salary</div>
+          <div class="form-group"><label>Select Staff</label>
+            <select id="sal-staff-select">
+              <option value="">Select staff…</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Month</label>
+            <input type="month" id="sal-month" />
+          </div>
+          <div class="form-group"><label>Amount Paid (₹)</label>
+            <input type="number" id="sal-amount" placeholder="Monthly salary amount" min="1" />
+          </div>
+          <div class="form-group"><label>Note</label>
+            <input id="sal-note" placeholder="Optional note" />
+          </div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="paySalary()">Pay
+            Salary</button>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:600;margin-bottom:.75rem">⬆️ Give Advance (Upad)</div>
+          <div class="form-group"><label>Select Staff</label>
+            <select id="adv-staff-select">
+              <option value="">Select staff…</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Advance Amount (₹)</label>
+            <input type="number" id="adv-amount" placeholder="Advance amount" min="1" />
+          </div>
+          <div class="form-group"><label>Date</label>
+            <input type="date" id="adv-date" />
+          </div>
+          <div class="form-group"><label>Reason</label>
+            <input id="adv-reason" placeholder="e.g. Medical, Personal" />
+          </div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;background:#3B82F6"
+            onclick="giveAdvance()">Give Advance</button>
+        </div>
+      </div>
+
+      <!-- Salary history -->
+      <div class="card">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+          <div style="font-weight:600">Salary & Advance History</div>
+          <select id="staff-history-filter" onchange="renderStaffHistory()"
+            style="font-size:.8rem;padding:.3rem .6rem;border-radius:.4rem;border:1px solid var(--border);background:var(--card);color:var(--text)">
+            <option value="">All Staff</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Staff</th>
+                <th>Type</th>
+                <th>Amount (₹)</th>
+                <th>Month/Date</th>
+                <th>Note/Reason</th>
+              </tr>
+            </thead>
+            <tbody id="staff-history-body"></tbody>
+          </table>
+        </div>
+        <div id="staff-summary"
+          style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);font-size:.875rem"></div>
+      </div>
+    </div>
+
+
+
+    <!-- TOAST -->
+    <div id="toast"></div>
+
+    <!-- MEMBER MODALS (global, outside pages) -->
+    <div class="overlay" id="member-modal">
+      <div class="modal" style="max-width:400px">
+        <h3 id="member-modal-title">Add Member</h3>
+        <input type="hidden" id="member-edit-id" />
+        <div class="form-group"><label>Member Name *</label>
+          <input id="member-name" placeholder="e.g. Wife, Beta, Beti" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('member-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveMember()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="member-expense-modal">
+      <div class="modal" style="max-width:400px">
+        <h3 id="member-expense-title">Add Karcha</h3>
+        <input type="hidden" id="me-member-id" />
+        <input type="hidden" id="me-edit-id" />
+        <div class="form-group"><label>Date *</label>
+          <input type="date" id="me-date" />
+        </div>
+        <div class="form-group"><label>Description *</label>
+          <input id="me-desc" placeholder="e.g. Kapde, Medicine" />
+        </div>
+        <div class="form-group"><label>Amount (₹) *</label>
+          <input type="number" id="me-amount" min="1" step="0.01" placeholder="0.00" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('member-expense-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveMemberExpense()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REMOVE MEMBER MODAL -->
+    <div class="overlay" id="remove-member-modal">
+      <div class="modal" style="max-width:380px">
+        <h3>🗑 Remove Member</h3>
+        <div class="form-group">
+          <label>Member select karo *</label>
+          <select id="remove-member-select">
+            <option value="">-- Member select karo --</option>
+          </select>
+        </div>
+        <p style="font-size:.8rem;color:var(--danger);margin-bottom:1rem">⚠ Member delete hone ke baad uske saare
+          kharche aur rashan entries bhi delete ho jayenge.</p>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('remove-member-modal')">Cancel</button>
+          <button class="btn btn-danger" onclick="confirmRemoveMember()">🗑 Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RASHAN MODAL -->
+    <div class="overlay" id="rashan-modal">
+      <div class="modal" style="max-width:420px">
+        <h3 id="rashan-modal-title">Add Rashan</h3>
+        <input type="hidden" id="rashan-edit-id" />
+        <div class="form-group"><label>Month *</label>
+          <input type="month" id="rashan-month" />
+        </div>
+        <div class="form-group"><label>Member *</label>
+          <select id="rashan-member">
+            <option value="">-- Select Member --</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Amount (₹) *</label>
+          <input type="number" id="rashan-amount" min="1" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="form-group"><label>Note</label>
+          <input id="rashan-note" placeholder="e.g. Atta, Chawal, Tel" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('rashan-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveRashan()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUSTOMER MODAL -->
+    <div class="overlay" id="customer-modal">
+      <div class="modal">
+        <h3 id="customer-modal-title">Add Customer</h3>
+        <input type="hidden" id="customer-edit-id" />
+        <div class="form-group"><label>Name *</label><input id="c-name" placeholder="Customer name" /></div>
+        <div class="form-group"><label>Phone *</label><input id="c-phone" type="tel" placeholder="Phone number" /></div>
+        <div class="form-group"><label>Address</label><input id="c-address" placeholder="Address (optional)" /></div>
+        <div class="form-group"><label>GST Number</label><input id="c-gst" placeholder="GST number (optional)" /></div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('customer-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveCustomer()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDER MODAL -->
+    <div class="overlay" id="order-modal">
+      <div class="modal">
+        <h3 id="order-modal-title">Create Order</h3>
+        <input type="hidden" id="order-edit-id" />
+        <div class="form-group"><label>Customer *</label><select id="o-customer">
+            <option value="">Select customer…</option>
+          </select></div>
+        <div class="form-row">
+          <div class="form-group"><label>Design Name</label><input id="o-design" placeholder="e.g. Floral" /></div>
+          <div class="form-group"><label>Fabric Type</label><input id="o-fabric" placeholder="e.g. Cotton" /></div>
+        </div>
+        <div class="form-group">
+          <label>Design Photo (optional)</label>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.4rem">
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+              📁 Gallery
+              <input type="file" id="o-photo" accept="image/*" style="display:none"
+                onchange="previewOrderPhoto(event)" />
+            </label>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+              📷 Camera
+              <input type="file" id="o-camera" accept="image/*" capture="environment" style="display:none"
+                onchange="previewOrderPhoto(event)" />
+            </label>
+          </div>
+          <div id="o-photo-preview" style="margin-top:.5rem"></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="o-photo-remove" onclick="removeOrderPhoto()"
+            style="margin-top:.35rem;color:var(--danger);font-size:.75rem;display:none">✕ Remove Photo</button>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Stitch Count *</label><input id="o-stitch" type="number" min="1"
+              placeholder="5000" oninput="calcTotal()" /></div>
+          <div class="form-group"><label>Rate / 1000 stitches (₹) *</label><input id="o-rate" type="number" min="0.01"
+              step="0.01" placeholder="50" oninput="calcTotal()" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Quantity *</label><input id="o-qty" type="number" min="1" value="1"
+              oninput="calcTotal()" /></div>
+          <div class="form-group"><label>Extra Charges (₹)</label><input id="o-extra" type="number" min="0" value="0"
+              oninput="calcTotal()" /></div>
+        </div>
+        <div class="total-box">Total: ₹<span id="o-total">0.00</span></div>
+        <div class="form-row">
+          <div class="form-group"><label>Delivery Date</label><input id="o-delivery" type="date" /></div>
+          <div class="form-group"><label>Status</label>
+            <select id="o-status">
+              <option>Pending</option>
+              <option>In Progress</option>
+              <option>Completed</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('order-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveOrder()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT MODAL -->
+    <div class="overlay" id="payment-modal">
+      <div class="modal">
+        <h3>Record Payment</h3>
+        <div class="form-group"><label>Select Order *</label>
+          <select id="p-orderid">
+            <option value="">Select order…</option>
+          </select>
+        </div>
+        <div id="p-order-info" style="font-size:.8rem;color:var(--muted);margin-top:-.5rem;margin-bottom:.75rem"></div>
+        <div class="form-group"><label>Amount Paid (₹) *</label>
+          <input id="p-amount" type="number" min="0.01" step="0.01" placeholder="0.00" />
+          <div style="display:flex;gap:.5rem;margin-top:.4rem;flex-wrap:wrap">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="setHalfPayment()">½ Half Payment</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="setFullPayment()">✓ Full Payment</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="setCustomPayment(25)">¼ Quarter</button>
+          </div>
+        </div>
+        <div class="form-group"><label>Method</label>
+          <select id="p-method">
+            <option>Cash</option>
+            <option>UPI</option>
+            <option>Bank Transfer</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Payment Date</label><input id="p-date" type="date" /></div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('payment-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="savePayment()">Record</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVENTORY PAGE -->
+    <div class="page" id="page-inventory">
+      <div class="page-header">
+        <h2>🧶 Thread & Material Stock</h2>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,.3)"
+            onclick="clearInventory()">🗑 Clear</button>
+          <button class="btn btn-primary" onclick="openInventoryModal()">+ Add Item</button>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div id="inventory-summary"
+        style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.25rem">
+      </div>
+
+      <!-- Filter -->
+      <div class="search-bar">
+        <input type="search" id="inventory-search" placeholder="Search item…" oninput="renderInventory()" />
+        <select id="inventory-cat-filter" onchange="renderInventory()" style="max-width:180px">
+          <option value="">All Types</option>
+          <option>Thread</option>
+          <option>Needle</option>
+          <option>Fabric</option>
+          <option>Backing Paper</option>
+          <option>Bobbin</option>
+          <option>Other Material</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>Type</th>
+                <th>Color/Code</th>
+                <th>Stock In</th>
+                <th>Stock Used</th>
+                <th>Remaining</th>
+                <th>Unit</th>
+                <th>Last Updated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVENTORY MODAL -->
+    <div class="overlay" id="inventory-modal">
+      <div class="modal" style="max-width:460px">
+        <h3 id="inventory-modal-title">Add Item</h3>
+        <input type="hidden" id="inventory-edit-id" />
+        <div class="form-row">
+          <div class="form-group"><label>Item Name *</label>
+            <input id="inv-name" placeholder="e.g. Red Thread, Cotton Fabric" />
+          </div>
+          <div class="form-group"><label>Type</label>
+            <select id="inv-type">
+              <option>Thread</option>
+              <option>Needle</option>
+              <option>Fabric</option>
+              <option>Backing Paper</option>
+              <option>Bobbin</option>
+              <option>Other Material</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Color / Code</label>
+            <input id="inv-color" placeholder="e.g. Red, #123, 5000" />
+          </div>
+          <div class="form-group"><label>Unit</label>
+            <select id="inv-unit">
+              <option>Cone</option>
+              <option>Meter</option>
+              <option>Kg</option>
+              <option>Piece</option>
+              <option>Roll</option>
+              <option>Box</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Stock In (Total received)</label>
+            <input type="number" id="inv-stock-in" min="0" step="0.01" placeholder="0" />
+          </div>
+          <div class="form-group"><label>Stock Used</label>
+            <input type="number" id="inv-stock-used" min="0" step="0.01" placeholder="0" />
+          </div>
+        </div>
+        <div class="form-group"><label>Note</label>
+          <input id="inv-note" placeholder="Optional note" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('inventory-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveInventory()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPENSES PAGE -->
+    <div class="page" id="page-expenses">
+      <div class="page-header">
+        <h2>� Expenses</h2>s
+        <div style="display:flex;gap:.5rem">
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,.3)"
+            onclick="clearAllExpenses()">🗑 Clear</button>
+          <button class="btn btn-primary" onclick="openExpenseModal()">+ Add Expense</button>
+        </div>
+      </div>
+
+      <!-- Type Toggle: Business vs Ghar -->
+      <div style="display:flex;gap:.5rem;margin-bottom:1.25rem">
+        <button id="exp-type-business" class="btn btn-primary" onclick="setExpenseType('business')"
+          style="min-width:160px">💼 Business Expenses</button>
+        <button id="exp-type-home" class="btn btn-ghost" onclick="setExpenseType('home')" style="min-width:160px">🏠
+          Personal Expenses</button>
+      </div>
+
+      <!-- Summary cards -->
+      <div id="expense-summary"
+        style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.25rem">
+      </div>
+
+      <!-- Category Tabs (Business) -->
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.25rem" id="expense-tabs-business">
+        <button class="exp-tab btn btn-primary btn-sm" data-cat="" onclick="setExpenseTab(this,'')">All</button>
+        <button class="exp-tab btn btn-ghost btn-sm" data-cat="Machine Repair"
+          onclick="setExpenseTab(this,'Machine Repair')">🔧 Machine Repair</button>
+        <button class="exp-tab btn btn-ghost btn-sm" data-cat="Electricity"
+          onclick="setExpenseTab(this,'Electricity')">⚡ Electricity</button>
+        <button class="exp-tab btn btn-ghost btn-sm" data-cat="Rent" onclick="setExpenseTab(this,'Rent')">🏠
+          Rent</button>
+        <button class="exp-tab btn btn-ghost btn-sm" data-cat="Transport" onclick="setExpenseTab(this,'Transport')">🚗
+          Transport</button>
+        <button class="exp-tab btn btn-ghost btn-sm" data-cat="Food & Tea" onclick="setExpenseTab(this,'Food & Tea')">☕
+          Food & Tea</button>
+        <button class="exp-tab btn btn-ghost btn-sm" data-cat="Other" onclick="setExpenseTab(this,'Other')">📦
+          Other</button>
+      </div>
+
+      <!-- Category Tabs (Ghar) -->
+      <div style="display:none;gap:.4rem;flex-wrap:wrap;margin-bottom:1.25rem" id="expense-tabs-home">
+        <button class="exp-tab-home btn btn-primary btn-sm" data-cat=""
+          onclick="setExpenseTabHome(this,'')">All</button>
+        <button class="exp-tab-home btn btn-ghost btn-sm" data-cat="Grocery/Rashan"
+          onclick="setExpenseTabHome(this,'Grocery/Rashan')">🛒 Grocery/Rashan</button>
+        <button class="exp-tab-home btn btn-ghost btn-sm" data-cat="School Fee"
+          onclick="setExpenseTabHome(this,'School Fee')">📚 School Fee</button>
+        <button class="exp-tab-home btn btn-ghost btn-sm" data-cat="Bijli/Paani Bill"
+          onclick="setExpenseTabHome(this,'Bijli/Paani Bill')">💡 Bijli/Paani Bill</button>
+        <button class="exp-tab-home btn btn-ghost btn-sm" data-cat="Doctor/Dawai"
+          onclick="setExpenseTabHome(this,'Doctor/Dawai')">💊 Doctor/Dawai</button>
+        <button class="exp-tab-home btn btn-ghost btn-sm" data-cat="Other" onclick="setExpenseTabHome(this,'Other')">📦
+          Other</button>
+      </div>
+
+      <!-- Filter -->
+      <div class="search-bar">
+        <input type="search" id="expense-search" placeholder="Search karcha…" oninput="renderExpenses()" />
+        <input type="month" id="expense-month-filter" onchange="renderExpenses()" />
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount (₹)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="expenses-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Rashan Tracker Section -->
+      <div id="rashan-section" style="display:none;margin-top:1.5rem">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+          <h3 style="font-size:1.1rem;font-weight:700">🛒 Rashan Tracker (Member-wise Monthly)</h3>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-ghost btn-sm" onclick="openMemberModal()">👤 Add Member</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,.3)"
+              onclick="openRemoveMemberModal()">🗑 Remove Member</button>
+            <button class="btn btn-primary btn-sm" onclick="openRashanModal()">+ Add Rashan</button>
+          </div>
+        </div>
+        <div style="margin-bottom:1rem">
+          <input type="month" id="rashan-month-filter" onchange="renderRashanTable()"
+            style="padding:.4rem .75rem;border:1px solid var(--border);border-radius:.5rem;background:var(--card);color:var(--text);font-size:.875rem" />
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Member</th>
+                  <th>Amount (₹)</th>
+                  <th>Note</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="rashan-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="rashan-summary"
+          style="margin-top:1rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem">
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPENSE MODAL -->
+    <div class="overlay" id="expense-modal">
+      <div class="modal" style="max-width:420px">
+        <h3 id="expense-modal-title">Add Karcha</h3>
+        <input type="hidden" id="expense-edit-id" />
+        <div class="form-group"><label>Date *</label>
+          <input type="date" id="exp-date" />
+        </div>
+        <div class="form-group"><label>Category *</label>
+          <select id="exp-category">
+            <optgroup label="Business Karcha" id="exp-cat-business">
+              <option>Machine Repair</option>
+              <option>Electricity</option>
+              <option>Rent</option>
+              <option>Transport</option>
+              <option>Food & Tea</option>
+              <option>Other</option>
+            </optgroup>
+            <optgroup label="Ghar ka Karcha" id="exp-cat-home" style="display:none">
+              <option>Grocery/Rashan</option>
+              <option>School Fee</option>
+              <option>Bijli/Paani Bill</option>
+              <option>Doctor/Dawai</option>
+              <option>Other</option>
+            </optgroup>
+          </select>
+        </div>
+        <input type="hidden" id="exp-type" value="business" />
+        <div class="form-group"><label>Description</label>
+          <input id="exp-desc" placeholder="e.g. Thread kharida, Machine oil" />
+        </div>
+        <div class="form-group"><label>Amount (₹) *</label>
+          <input type="number" id="exp-amount" min="1" step="0.01" placeholder="0.00" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('expense-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveExpense()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMBER BUDGET PAGE -->
+    <div class="page" id="page-member-budget">
+      <div class="page-header">
+        <h2>👨‍👩‍👧 Ghar Member Karcha</h2>
+        <button class="btn btn-primary" onclick="openMemberModal()">+ Add Member</button>
+      </div>
+
+      <!-- Members grid -->
+      <div id="member-cards"
+        style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:1.5rem">
+      </div>
+
+      <!-- Member detail view -->
+      <div id="member-detail" style="display:none">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+          <button class="btn btn-ghost btn-sm" onclick="closeMemberDetail()">← Back</button>
+          <h3 id="member-detail-name" style="font-size:1.1rem;font-weight:700"></h3>
+        </div>
+        <div id="member-detail-summary"
+          style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.25rem">
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+            <span style="font-weight:600">Kharche ki List</span>
+            <button class="btn btn-primary btn-sm" onclick="openMemberExpenseModal()">+ Add Karcha</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Amount (₹)</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="member-expenses-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MACHINES PAGE -->
+    <div class="page" id="page-machines">
+      <div class="page-header">
+        <h2>⚙️ Machine Management</h2>
+        <button class="btn btn-primary" onclick="openMachineModal()">+ Add Machine</button>
+      </div>
+
+      <!-- Machine status cards -->
+      <div id="machine-cards"
+        style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:1.25rem">
+      </div>
+      <div class="search-bar">
+        <input type="search" id="machine-search" placeholder="Search by machine name or type…"
+          oninput="renderMachinesPage()" />
+      </div>
+
+      <!-- Machine list table -->
+      <div class="card">
+        <div style="font-weight:600;margin-bottom:.75rem">All Machines</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Machine Name</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Current Work</th>
+                <th>Operator</th>
+                <th>Last Service</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="machines-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Work log -->
+      <div class="card" style="margin-top:1.25rem">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+          <div style="font-weight:600">Work Log</div>
+          <select id="machine-log-filter" onchange="renderMachineLog()"
+            style="font-size:.8rem;padding:.3rem .6rem;border-radius:.4rem;border:1px solid var(--border);background:var(--card);color:var(--text)">
+            <option value="">All Machines</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Machine</th>
+                <th>Work/Order</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Status</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody id="machine-log-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MACHINE MODAL -->
+    <div class="overlay" id="machine-modal">
+      <div class="modal" style="max-width:460px">
+        <h3 id="machine-modal-title">Add Machine</h3>
+        <input type="hidden" id="machine-edit-id" />
+        <div class="form-row">
+          <div class="form-group"><label>Machine Name *</label>
+            <input id="m-name" placeholder="e.g. Machine 1, Singer M1" />
+          </div>
+          <div class="form-group"><label>Type</label>
+            <select id="m-type">
+              <option>Embroidery Machine</option>
+              <option>Sewing Machine</option>
+              <option>Overlock Machine</option>
+              <option>Cutting Machine</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Status</label>
+            <select id="m-status">
+              <option value="Running">🟢 Running</option>
+              <option value="Idle">🟡 Idle</option>
+              <option value="Maintenance">🔴 Maintenance</option>
+              <option value="Breakdown">⛔ Breakdown</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Operators (Staff) — multiple select</label>
+            <div id="m-operators-list"
+              style="border:1px solid var(--border);border-radius:.5rem;padding:.5rem;max-height:120px;overflow-y:auto;background:var(--card);font-size:.85rem">
+            </div>
+          </div>
+        </div>
+        <div class="form-group"><label>Current Work / Order</label>
+          <select id="m-work">
+            <option value="">None / Manual entry</option>
+          </select>
+          <input id="m-work-manual" placeholder="Or type custom work description…" style="margin-top:.4rem" />
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Purchase Date</label>
+            <input type="date" id="m-purchase" />
+          </div>
+          <div class="form-group"><label>Last Service Date</label>
+            <input type="date" id="m-service" />
+          </div>
+        </div>
+        <div class="form-group"><label>Note</label>
+          <input id="m-note" placeholder="Any additional info" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('machine-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveMachine()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MACHINE LOG MODAL -->
+    <div class="overlay" id="machine-log-modal">
+      <div class="modal" style="max-width:420px">
+        <h3>Add Work Log</h3>
+        <input type="hidden" id="log-machine-id" />
+        <div class="form-group"><label>Work / Order Description *</label>
+          <input id="log-work" placeholder="e.g. Floral design, Order EMB-001" />
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Start Date & Time</label>
+            <input type="datetime-local" id="log-start" />
+          </div>
+          <div class="form-group"><label>End Date & Time</label>
+            <input type="datetime-local" id="log-end" />
+          </div>
+        </div>
+        <div class="form-group"><label>Status</label>
+          <select id="log-status">
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Paused">Paused</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Note</label>
+          <input id="log-note" placeholder="Optional note" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost"
+            onclick="closeModal('machine-log-modal');document.getElementById('machine-log-modal').style.display='none'">Cancel</button>
+          <button class="btn btn-primary" onclick="saveMachineLog()">Save Log</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="overlay" id="staff-modal">
+      <div class="modal" style="max-width:420px">
+        <h3 id="staff-modal-title">Add Staff</h3>
+        <input type="hidden" id="staff-edit-id" />
+        <div class="form-group"><label>Full Name *</label><input id="st-name" placeholder="Staff name" /></div>
+        <div class="form-row">
+          <div class="form-group"><label>Role</label>
+            <select id="st-role">
+              <option>Embroidery Worker</option>
+              <option>Tailor</option>
+              <option>Helper</option>
+              <option>Manager</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Monthly Salary (₹) *</label>
+            <input type="number" id="st-salary" placeholder="e.g. 12000" min="1" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Phone</label><input id="st-phone" type="tel" placeholder="Phone number" />
+          </div>
+          <div class="form-group"><label>Join Date</label><input type="date" id="st-join" /></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('staff-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveStaff()">Save</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="overlay" id="logo-modal">
+      <div class="modal" style="max-width:420px">
+        <h3>⚙️ Business Settings</h3>
+        <div class="form-group">
+          <label>Business Name</label>
+          <input id="biz-name-input" placeholder="e.g. Mahalakshmi Embroidery" />
+        </div>
+        <div class="form-group">
+          <label>Business Logo</label>
+          <div style="display:flex;align-items:center;gap:1rem">
+            <div id="logo-preview"
+              style="width:72px;height:72px;border-radius:.5rem;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:2rem;overflow:hidden;background:var(--bg);flex-shrink:0">
+              🧵</div>
+            <div>
+              <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+                📁 Upload Image
+                <input type="file" id="logo-file-input" accept="image/*" style="display:none"
+                  onchange="handleLogoUpload(event)" />
+              </label>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem">PNG, JPG — max 2MB</div>
+              <button class="btn btn-ghost btn-sm" style="margin-top:.3rem;color:var(--danger);font-size:.75rem"
+                onclick="removeLogo()">✕ Remove</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Business Address (shown on invoice)</label>
+          <input id="biz-address-input" placeholder="e.g. Shop 5, Market Road, Thane" />
+        </div>
+        <div class="form-group">
+          <label>Phone (shown on invoice)</label>
+          <input id="biz-phone-input" placeholder="e.g. 9876543210" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('logo-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveLogoSettings()">Save</button>
+        </div>
+        <hr style="border-color:var(--border);margin:1.25rem 0" />
+        <!-- Storage Info -->
+        <div
+          style="background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.2);border-radius:.5rem;padding:1rem;margin-bottom:1rem">
+          <div style="font-size:.85rem;font-weight:600;color:#3B82F6;margin-bottom:.5rem">💾 Storage Usage</div>
+          <div id="storage-info" style="font-size:.8rem;color:var(--muted)">Calculating...</div>
+          <div style="margin-top:.5rem;background:var(--border);border-radius:999px;height:8px;overflow:hidden">
+            <div id="storage-bar"
+              style="height:100%;background:#3B82F6;border-radius:999px;transition:width .5s;width:0%"></div>
+          </div>
+        </div>
+        <div
+          style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-radius:.5rem;padding:1rem">
+          <div style="font-size:.85rem;font-weight:600;color:var(--danger);margin-bottom:.5rem">⚠ Danger Zone</div>
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem">Saara data delete ho jayega — Customers,
+            Orders, Payments, Staff, Machines sab. Yeh action undo nahi ho sakta.</div>
+          <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑 Clear All Data</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- CHALLAN MODAL -->
+    <div class="overlay" id="challan-modal">
+      <div class="modal" style="max-width:560px">
+        <h3>📦 Delivery Challan</h3>
+        <div id="challan-content"
+          style="font-size:.875rem;line-height:1.8;border:1px solid var(--border);border-radius:.5rem;padding:1.25rem;background:var(--bg)">
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem;flex-wrap:wrap">
+          <button class="btn btn-ghost" onclick="closeModal('challan-modal')">Close</button>
+          <button class="btn btn-ghost" onclick="printChallan()">🖨 Print</button>
+          <button class="btn btn-primary" onclick="whatsappChallan()">💬 WhatsApp</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="invoice-modal">
+      <div class="modal" style="max-width:520px">
+        <h3>Invoice</h3>
+        <div id="invoice-content" style="font-size:.875rem;line-height:1.8"></div>
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeModal('invoice-modal')">Close</button>
+          <button class="btn btn-primary" onclick="printInvoice()">🖨 Print</button>
+          <button class="btn btn-primary" onclick="whatsappShare()">💬 WhatsApp</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Firebase disabled for now - using local auth -->
+
+    <script>
+      // ── Storage helpers (IndexedDB with localStorage fallback) ───────────────────
+      let _userKey = '';
+      let _db = null;
+
+      // Open IndexedDB
+      function openDB() {
+        return new Promise((resolve, reject) => {
+          if (_db) { resolve(_db); return; }
+          const req = indexedDB.open('EmbroideryBillDB', 1);
+          req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('store')) {
+              db.createObjectStore('store');
+            }
+          };
+          req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      // Async get from IndexedDB
+      async function getAsync(k) {
+        try {
+          const db = await openDB();
+          return new Promise((resolve) => {
+            const tx = db.transaction('store', 'readonly');
+            const req = tx.objectStore('store').get(_userKey + k);
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => resolve([]);
+          });
+        } catch {
+          return JSON.parse(localStorage.getItem(_userKey + k) || '[]');
+        }
+      }
+
+      // Async set to IndexedDB
+      async function setAsync(k, v) {
+        try {
+          const db = await openDB();
+          return new Promise((resolve) => {
+            const tx = db.transaction('store', 'readwrite');
+            tx.objectStore('store').put(v, _userKey + k);
+            tx.oncomplete = resolve;
+            tx.onerror = () => {
+              // Fallback to localStorage
+              try { localStorage.setItem(_userKey + k, JSON.stringify(v)); } catch (e) { console.warn('Storage full', e); }
+              resolve();
+            };
+          });
+        } catch {
+          try { localStorage.setItem(_userKey + k, JSON.stringify(v)); } catch (e) { console.warn('Storage full', e); }
+        }
+      }
+
+      // Sync wrappers (for backward compatibility — use cached data)
+      const _cache = {};
+      const get = k => _cache[_userKey + k] !== undefined ? _cache[_userKey + k] : JSON.parse(localStorage.getItem(_userKey + k) || '[]');
+      const set = (k, v) => {
+        _cache[_userKey + k] = v;
+        setAsync(k, v);
+        // Also keep small items in localStorage as backup
+        try { if (JSON.stringify(v).length < 100000) localStorage.setItem(_userKey + k, JSON.stringify(v)); } catch { }
+        // Sync to Realtime Database (cloud)
+        if (typeof saveToRTDB === 'function') saveToRTDB(k, v);
+      };
+
+      // Load all data from IndexedDB into cache on startup
+      async function loadAllFromDB() {
+        const keys = ['customers', 'orders', 'payments', 'staff', 'salary_history', 'machines', 'machine_logs', 'inventory', 'expenses', 'members', 'member_expenses', 'rashan', 'biz'];
+        for (const k of keys) {
+          const val = await getAsync(k);
+          _cache[_userKey + k] = val;
+        }
+      }
+
+      let currentInvoiceOrder = null;
+
+      // ── Navigation ───────────────────────────────────────────────────────────────
+      function showPage(name) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+        document.getElementById('page-' + name).classList.add('active');
+        document.querySelector('[data-page="' + name + '"]').classList.add('active');
+        if (name === 'dashboard') renderDashboard();
+        if (name === 'customers') renderCustomers();
+        if (name === 'orders') renderOrders();
+        if (name === 'payments') renderPayments();
+        if (name === 'expenses') {
+          // Show type toggle buttons when coming from Business Expenses sidebar
+          document.getElementById('exp-type-business').style.display = '';
+          document.getElementById('exp-type-home').style.display = '';
+          setExpenseType('business');
+          renderExpenses();
+        }
+        if (name === 'inventory') renderInventory();
+        if (name === 'machines') renderMachinesPage();
+        if (name === 'staff') renderStaffPage();
+        if (name === 'reports') renderReports();
+        if (name === 'member-budget') { closeMemberDetail(); renderMemberCards(); }
+        if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
+      }
+      document.querySelectorAll('.nav-link').forEach(a => {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          if (a.dataset.page === 'home-expenses') {
+            showHomeExpenses();
+          } else {
+            showPage(a.dataset.page);
+          }
+        });
+      });
+
+      function showHomeExpenses() {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+        document.getElementById('page-expenses').classList.add('active');
+        document.querySelector('[data-page="home-expenses"]').classList.add('active');
+        // Hide type toggle buttons — not needed when coming from Personal Expenses sidebar
+        const _b = document.getElementById('exp-type-business');
+        if (_b) _b.style.display = 'none';
+        const _h = document.getElementById('exp-type-home');
+        if (_h) _h.style.display = 'none';
+        setExpenseType('home');
+        if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
+      }
+      function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open') }
+      function toggleDark() { document.body.classList.toggle('dark') }
+
+      // ── Toast ────────────────────────────────────────────────────────────────────
+      function toast(msg, ms = 2500) {
+        const t = document.getElementById('toast'); t.textContent = msg; t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', ms);
+      }
+
+      // ── Modal helpers ────────────────────────────────────────────────────────────
+      function openModal(id) { document.getElementById(id).classList.add('open') }
+      function closeModal(id) { document.getElementById(id).classList.remove('open') }
+      document.querySelectorAll('.overlay').forEach(o => {
+        o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open') });
+      });
+
+      // ── ID generators ────────────────────────────────────────────────────────────
+      function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }
+      function orderIdGen() {
+        const d = new Date(), y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+        const orders = get('orders');
+        const todayKey = `${y}${m}${day}`;
+        const todayOrders = orders.filter(o => o.orderId && o.orderId.includes(todayKey));
+        const seq = String(todayOrders.length + 1).padStart(4, '0');
+        return `EMB-${todayKey}-${seq}`;
+      }
+
+      function previewOrderPhoto(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) { toast('Photo too large — max 5MB'); e.target.value = ''; return; }
+        const reader = new FileReader();
+        reader.onload = ev => {
+          // Compress image using canvas
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX = 1200;
+            let w = img.width, h = img.height;
+            if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+            if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const compressed = canvas.toDataURL('image/jpeg', 0.75);
+            const prev = document.getElementById('o-photo-preview');
+            prev.innerHTML = `<img src="${compressed}" style="max-width:100%;max-height:150px;border-radius:.5rem;border:1px solid var(--border);object-fit:contain"/>`;
+            prev.dataset.photo = compressed;
+            document.getElementById('o-photo-remove').style.display = 'inline-flex';
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function removeOrderPhoto() {
+        const prev = document.getElementById('o-photo-preview');
+        prev.innerHTML = ''; prev.dataset.photo = '';
+        document.getElementById('o-photo').value = '';
+        const cam = document.getElementById('o-camera'); if (cam) cam.value = '';
+        document.getElementById('o-photo-remove').style.display = 'none';
+      }
+
+      // ── Pricing ──────────────────────────────────────────────────────────────────
+      function calcTotal() {
+        const s = +document.getElementById('o-stitch').value || 0;
+        const r = +document.getElementById('o-rate').value || 0;
+        const q = +document.getElementById('o-qty').value || 1;
+        const e = +document.getElementById('o-extra').value || 0;
+        const t = Math.round(((s / 1000) * r * q + e) * 100) / 100;
+        document.getElementById('o-total').textContent = t.toFixed(2);
+      }
+
+      // ── Badge helpers ────────────────────────────────────────────────────────────
+      function statusBadge(s) {
+        const m = { Pending: 'badge-yellow', 'In Progress': 'badge-blue', Completed: 'badge-green' };
+        return `<span class="badge ${m[s] || 'badge-yellow'}">${s}</span>`;
+      }
+      function payBadge(s) {
+        const m = { Paid: 'badge-green', Unpaid: 'badge-red', Partial: 'badge-orange' };
+        return `<span class="badge ${m[s] || 'badge-red'}">${s}</span>`;
+      }
+
+      // ── Payment status derivation ────────────────────────────────────────────────
+      function derivePayStatus(orderId) {
+        const order = get('orders').find(o => o.orderId === orderId || o.id === orderId);
+        if (!order) return 'Unpaid';
+        const paid = get('payments').filter(p => p.orderId === orderId || p.orderId === order.id).reduce((a, p) => a + p.amount, 0);
+        if (paid <= 0) return 'Unpaid';
+        if (paid >= order.total) return 'Paid';
+        return 'Partial';
+      }
+      function totalPaid(orderId) {
+        const order = get('orders').find(o => o.orderId === orderId || o.id === orderId);
+        if (!order) return 0;
+        return get('payments').filter(p => p.orderId === orderId || p.orderId === order.id).reduce((a, p) => a + p.amount, 0);
+      }
+    </script>
+
+    <script>
+      // ── CUSTOMERS ────────────────────────────────────────────────────────────────
+      function openCustomerModal(id) {
+        document.getElementById('customer-edit-id').value = id || '';
+        document.getElementById('customer-modal-title').textContent = id ? 'Edit Customer' : 'Add Customer';
+        if (id) {
+          const c = get('customers').find(x => x.id === id);
+          document.getElementById('c-name').value = c.name;
+          document.getElementById('c-phone').value = c.phone;
+          document.getElementById('c-address').value = c.address || '';
+          document.getElementById('c-gst').value = c.gst || '';
+        } else {
+          ['c-name', 'c-phone', 'c-address', 'c-gst'].forEach(i => document.getElementById(i).value = '');
+        }
+        openModal('customer-modal');
+      }
+      function saveCustomer() {
+        const name = document.getElementById('c-name').value.trim();
+        const phone = document.getElementById('c-phone').value.trim();
+        if (!name || !phone) { toast('Name and Phone are required'); return; }
+        const id = document.getElementById('customer-edit-id').value;
+        const customers = get('customers');
+        const obj = { id: id || uid(), name, phone, address: document.getElementById('c-address').value.trim(), gst: document.getElementById('c-gst').value.trim() };
+        if (id) { const i = customers.findIndex(c => c.id === id); customers[i] = obj; }
+        else customers.push(obj);
+        set('customers', customers);
+        closeModal('customer-modal');
+        renderCustomers();
+        toast(id ? 'Customer updated' : 'Customer added');
+      }
+      function deleteCustomer(id) {
+        if (!confirm('Delete this customer?')) return;
+        set('customers', get('customers').filter(c => c.id !== id));
+        renderCustomers(); toast('Customer deleted');
+      }
+      function renderCustomers() {
+        const q = (document.getElementById('customer-search').value || '').toLowerCase();
+        const rows = get('customers').filter(c => !q || c.name.toLowerCase().includes(q) || c.phone.includes(q));
+        document.getElementById('customers-body').innerHTML = rows.length ? rows.map(c => `
+    <tr>
+      <td>${c.name}</td><td>${c.phone}</td><td>${c.address || '—'}</td><td>${c.gst || '—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openCustomerModal('${c.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" style="margin-left:.4rem" onclick="deleteCustomer('${c.id}')">Delete</button></td>
+    </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">No customers yet</td></tr>';
+      }
+
+      // ── ORDERS ───────────────────────────────────────────────────────────────────
+      function populateCustomerDropdown(selectedId) {
+        const sel = document.getElementById('o-customer');
+        sel.innerHTML = '<option value="">Select customer…</option>' +
+          get('customers').map(c => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.name} — ${c.phone}</option>`).join('');
+      }
+      function openOrderModal(id) {
+        document.getElementById('order-edit-id').value = id || '';
+        document.getElementById('order-modal-title').textContent = id ? 'Edit Order' : 'Create Order';
+        // Reset photo
+        document.getElementById('o-photo').value = '';
+        const prev = document.getElementById('o-photo-preview');
+        prev.innerHTML = ''; prev.dataset.photo = '';
+        if (id) {
+          const o = get('orders').find(x => x.id === id);
+          populateCustomerDropdown(o.customerId);
+          document.getElementById('o-design').value = o.design || '';
+          document.getElementById('o-fabric').value = o.fabric || '';
+          document.getElementById('o-stitch').value = o.stitch;
+          document.getElementById('o-rate').value = o.rate;
+          document.getElementById('o-qty').value = o.qty;
+          document.getElementById('o-extra').value = o.extra || 0;
+          document.getElementById('o-delivery').value = o.delivery || '';
+          document.getElementById('o-status').value = o.status;
+          document.getElementById('o-total').textContent = o.total.toFixed(2);
+          // Show existing photo
+          if (o.photo) { prev.innerHTML = `<img src="${o.photo}" style="max-width:100%;max-height:150px;border-radius:.5rem;border:1px solid var(--border);object-fit:contain"/>`; prev.dataset.photo = o.photo; document.getElementById('o-photo-remove').style.display = 'inline-flex'; }
+          else { document.getElementById('o-photo-remove').style.display = 'none'; }
+        } else {
+          populateCustomerDropdown('');
+          ['o-design', 'o-fabric', 'o-delivery'].forEach(i => document.getElementById(i).value = '');
+          document.getElementById('o-stitch').value = '';
+          document.getElementById('o-rate').value = '';
+          document.getElementById('o-qty').value = 1;
+          document.getElementById('o-extra').value = 0;
+          document.getElementById('o-status').value = 'Pending';
+          document.getElementById('o-total').textContent = '0.00';
+        }
+        openModal('order-modal');
+      }
+      function saveOrder() {
+        const customerId = document.getElementById('o-customer').value;
+        const stitch = +document.getElementById('o-stitch').value;
+        const rate = +document.getElementById('o-rate').value;
+        const qty = +document.getElementById('o-qty').value || 1;
+        if (!customerId) { toast('Please select a customer'); return; }
+        if (!stitch || stitch <= 0) { toast('Stitch count must be > 0'); return; }
+        if (!rate || rate <= 0) { toast('Rate must be > 0'); return; }
+        const extra = +document.getElementById('o-extra').value || 0;
+        const total = Math.round(((stitch / 1000) * rate * qty + extra) * 100) / 100;
+        const id = document.getElementById('order-edit-id').value;
+        const orders = get('orders');
+        const customer = get('customers').find(c => c.id === customerId);
+        const obj = {
+          id: id || uid(), orderId: id ? orders.find(o => o.id === id).orderId : orderIdGen(),
+          customerId, customerName: customer ? customer.name : '',
+          design: document.getElementById('o-design').value.trim(),
+          fabric: document.getElementById('o-fabric').value.trim(),
+          stitch, rate, qty, extra, total,
+          delivery: document.getElementById('o-delivery').value,
+          status: document.getElementById('o-status').value,
+          date: id ? orders.find(o => o.id === id).date : new Date().toISOString(),
+          photo: (() => { const p = document.getElementById('o-photo-preview'); const np = p && p.dataset.photo ? p.dataset.photo : ''; return np || (id ? orders.find(o => o.id === id)?.photo || '' : ''); })()
+        };
+        if (id) { const i = orders.findIndex(o => o.id === id); orders[i] = obj; }
+        else orders.push(obj);
+        set('orders', orders);
+        closeModal('order-modal');
+        renderOrders();
+        toast(id ? 'Order updated' : 'Order created');
+      }
+      function deleteOrder(id) {
+        if (!confirm('Delete this order?')) return;
+        set('orders', get('orders').filter(o => o.id !== id));
+        renderOrders(); toast('Order deleted');
+      }
+      function renderOrders() {
+        const sf = document.getElementById('order-status-filter').value;
+        const sq = (document.getElementById('order-search').value || '').toLowerCase();
+        let rows = get('orders');
+        if (sf) rows = rows.filter(o => o.status === sf);
+        if (sq) rows = rows.filter(o => (o.orderId || '').toLowerCase().includes(sq) || (o.customerName || '').toLowerCase().includes(sq) || (o.design || '').toLowerCase().includes(sq));
+        rows = rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+        document.getElementById('orders-body').innerHTML = rows.length ? rows.map(o => {
+          const ps = derivePayStatus(o.orderId);
+          return `<tr>
+      <td style="font-family:monospace">${o.orderId}</td>
+      <td>${o.customerName}</td><td>${o.design || '—'}</td>
+      <td>₹${o.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+      <td>${statusBadge(o.status)}</td><td>${payBadge(ps)}</td>
+      <td>${o.delivery || '—'}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openOrderModal('${o.id}')">Edit</button>
+        <button class="btn btn-primary btn-sm" style="margin-left:.3rem" onclick="openInvoice('${o.id}')">Invoice</button>
+        <button class="btn btn-ghost btn-sm btn-challan" style="margin-left:.3rem;background:rgba(16,185,129,.1);color:#059669;border-color:rgba(16,185,129,.3)" onclick="openChallan('${o.id}')">📦 Challan</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:.3rem" onclick="deleteOrder('${o.id}')">Del</button>
+      </td></tr>`;
+        }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">No orders found</td></tr>';
+      }
+    </script>
+
+    <script>
+      // ── PAYMENTS ─────────────────────────────────────────────────────────────────
+      function setHalfPayment() {
+        const orderId = document.getElementById('p-orderid').value;
+        if (!orderId) { toast('Pehle order select karo'); return; }
+        const order = get('orders').find(o => o.orderId === orderId);
+        if (!order) return;
+        const due = order.total - totalPaid(order.orderId);
+        document.getElementById('p-amount').value = (due / 2).toFixed(2);
+      }
+      function setFullPayment() {
+        const orderId = document.getElementById('p-orderid').value;
+        if (!orderId) { toast('Pehle order select karo'); return; }
+        const order = get('orders').find(o => o.orderId === orderId);
+        if (!order) return;
+        const due = order.total - totalPaid(order.orderId);
+        document.getElementById('p-amount').value = due.toFixed(2);
+      }
+      function setCustomPayment(percent) {
+        const orderId = document.getElementById('p-orderid').value;
+        if (!orderId) { toast('Pehle order select karo'); return; }
+        const order = get('orders').find(o => o.orderId === orderId);
+        if (!order) return;
+        const due = order.total - totalPaid(order.orderId);
+        document.getElementById('p-amount').value = (due * percent / 100).toFixed(2);
+      }
+
+      function clearAllPayments() {
+        if (!confirm('Saare payments delete karo?\n\nYeh action undo nahi ho sakta.')) return;
+        set('payments', []);
+        // Reset all order payment statuses to Unpaid
+        const orders = get('orders');
+        orders.forEach(o => o.paymentStatus = 'Unpaid');
+        set('orders', orders);
+        renderPayments();
+        toast('Saare payments clear ho gaye ✓');
+      }
+
+      function openPaymentModal() {
+        // Populate order dropdown — show unpaid/partial first, then all
+        const orders = get('orders');
+        const sel = document.getElementById('p-orderid');
+        sel.innerHTML = '<option value="">Select order…</option>';
+        // Sort: unpaid/partial first
+        const sorted = [...orders].sort((a, b) => {
+          const pa = derivePayStatus(a.orderId);
+          const pb = derivePayStatus(b.orderId);
+          const rank = { Unpaid: 0, Partial: 1, Paid: 2 };
+          return (rank[pa] || 0) - (rank[pb] || 0);
+        });
+        sorted.forEach(o => {
+          const ps = derivePayStatus(o.orderId);
+          const bal = o.total - totalPaid(o.orderId);
+          const opt = document.createElement('option');
+          opt.value = o.orderId;
+          opt.textContent = `${o.orderId} — ${o.customerName} (₹${bal.toFixed(2)} due) [${ps}]`;
+          if (ps === 'Paid') opt.style.color = '#94A3B8';
+          sel.appendChild(opt);
+        });
+        sel.onchange = function () {
+          const order = get('orders').find(o => o.orderId === this.value);
+          const info = document.getElementById('p-order-info');
+          if (order) {
+            const bal = order.total - totalPaid(order.orderId);
+            info.innerHTML = `Customer: <b>${order.customerName}</b> | Total: ₹${order.total} | Paid: ₹${totalPaid(order.orderId).toFixed(2)} | <span style="color:var(--danger)">Due: ₹${bal.toFixed(2)}</span>`;
+            document.getElementById('p-amount').value = bal > 0 ? bal.toFixed(2) : '';
+          } else {
+            info.innerHTML = '';
+          }
+        };
+        document.getElementById('p-amount').value = '';
+        document.getElementById('p-method').value = 'Cash';
+        document.getElementById('p-date').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('p-order-info').innerHTML = '';
+        openModal('payment-modal');
+      }
+      function savePayment() {
+        const orderId = document.getElementById('p-orderid').value.trim();
+        const amount = +document.getElementById('p-amount').value;
+        if (!orderId) { toast('Order ID is required'); return; }
+        if (!amount || amount <= 0) { toast('Amount must be > 0'); return; }
+        const order = get('orders').find(o => o.orderId === orderId);
+        if (!order) { toast('Order not found'); return; }
+        const payments = get('payments');
+        payments.push({ id: uid(), orderId, amount, method: document.getElementById('p-method').value, date: document.getElementById('p-date').value, customerName: order.customerName, orderTotal: order.total });
+        set('payments', payments);
+        closeModal('payment-modal');
+        renderPayments();
+        toast('Payment recorded');
+      }
+      function renderPayments() {
+        const sq = (document.getElementById('payment-search').value || '').toLowerCase();
+        let payments = get('payments').sort((a, b) => new Date(b.date) - new Date(a.date));
+        if (sq) payments = payments.filter(p => (p.orderId || '').toLowerCase().includes(sq) || (p.customerName || '').toLowerCase().includes(sq));
+        document.getElementById('payments-body').innerHTML = payments.length ? payments.map(p => `
+    <tr>
+      <td style="font-family:monospace">${p.orderId}</td>
+      <td>${p.customerName || '—'}</td>
+      <td>₹${p.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+      <td>${p.method}</td>
+      <td>${p.date}</td>
+      <td>${payBadge(derivePayStatus(p.orderId))}</td>
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">No payments yet</td></tr>';
+
+        // Outstanding balances
+        const orders = get('orders');
+        const outstanding = orders.filter(o => derivePayStatus(o.orderId) !== 'Paid').map(o => ({
+          orderId: o.orderId, customer: o.customerName, total: o.total, paid: totalPaid(o.orderId), balance: o.total - totalPaid(o.orderId)
+        })).filter(o => o.balance > 0);
+        const sec = document.getElementById('outstanding-section');
+        if (outstanding.length) {
+          sec.innerHTML = `<div class="card" style="border-color:#F59E0B;background:rgba(245,158,11,.05)">
+      <div style="font-weight:600;color:var(--accent);margin-bottom:.75rem">⚠ Outstanding Balances</div>
+      <div class="table-wrap"><table><thead><tr><th>Order ID</th><th>Customer</th><th>Total</th><th>Paid</th><th>Balance</th></tr></thead><tbody>
+      ${outstanding.map(o => `<tr>
+        <td style="font-family:monospace">${o.orderId}</td><td>${o.customer}</td>
+        <td>₹${o.total.toFixed(2)}</td><td>₹${o.paid.toFixed(2)}</td>
+        <td style="color:var(--danger);font-weight:600">₹${o.balance.toFixed(2)}</td>
+      </tr>`).join('')}
+      </tbody></table></div></div>`;
+        } else sec.innerHTML = '';
+      }
+
+      // ── CHALLAN ───────────────────────────────────────────────────────────────────
+      let _currentChallanOrder = null;
+
+      function challanNumber(orderId) {
+        return 'CHN-' + orderId.replace('EMB-', '');
+      }
+
+      function openChallan(id) {
+        const o = get('orders').find(x => x.id === id);
+        if (!o) return;
+        _currentChallanOrder = o;
+        const customer = get('customers').find(c => c.id === o.customerId) || {};
+        const biz = getBizSettings();
+        const today = new Date().toLocaleDateString('en-IN');
+        document.getElementById('challan-content').innerHTML = `
+    <div style="text-align:center;margin-bottom:1rem;border-bottom:2px solid var(--accent);padding-bottom:.75rem">
+      ${biz.logo ? `<img src="${biz.logo}" style="height:48px;object-fit:contain;margin-bottom:.4rem"/><br/>` : ''}
+      <div style="font-size:1.3rem;font-weight:700;color:var(--accent)">${biz.name || 'EmbroideryBill'}</div>
+      ${biz.address ? `<div style="font-size:.75rem;color:var(--muted)">${biz.address}</div>` : ''}
+      ${biz.phone ? `<div style="font-size:.75rem;color:var(--muted)">📞 ${biz.phone}</div>` : ''}
+      <div style="font-size:1rem;font-weight:700;margin-top:.5rem;color:var(--text)">DELIVERY CHALLAN</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.75rem;font-size:.82rem">
+      <div><span style="color:var(--muted)">Challan No:</span> <b>${challanNumber(o.orderId)}</b></div>
+      <div><span style="color:var(--muted)">Date:</span> <b>${today}</b></div>
+      <div><span style="color:var(--muted)">Order ID:</span> <b style="font-family:monospace">${o.orderId}</b></div>
+      <div><span style="color:var(--muted)">Delivery Date:</span> <b>${o.delivery || '—'}</b></div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:.4rem;padding:.75rem;margin-bottom:.75rem;font-size:.82rem">
+      <div style="font-weight:700;margin-bottom:.35rem;color:var(--muted)">DELIVER TO:</div>
+      <div style="font-weight:700;font-size:.95rem">${o.customerName}</div>
+      ${customer.phone ? `<div>📞 ${customer.phone}</div>` : ''}
+      ${customer.address ? `<div>📍 ${customer.address}</div>` : ''}
+      ${customer.gst ? `<div>GST: ${customer.gst}</div>` : ''}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:.75rem">
+      <thead>
+        <tr style="background:var(--primary);color:#fff">
+          <th style="padding:.4rem .6rem;text-align:left">#</th>
+          <th style="padding:.4rem .6rem;text-align:left">Description</th>
+          <th style="padding:.4rem .6rem;text-align:center">Stitch Count</th>
+          <th style="padding:.4rem .6rem;text-align:center">Qty</th>
+          <th style="padding:.4rem .6rem;text-align:left">Fabric</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:.4rem .6rem">1</td>
+          <td style="padding:.4rem .6rem">${o.design || 'Embroidery Work'}</td>
+          <td style="padding:.4rem .6rem;text-align:center">${o.stitch.toLocaleString()}</td>
+          <td style="padding:.4rem .6rem;text-align:center">${o.qty}</td>
+          <td style="padding:.4rem .6rem">${o.fabric || '—'}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;font-size:.8rem">
+      <div style="border-top:1px solid var(--border);padding-top:.5rem;text-align:center;color:var(--muted)">
+        Receiver's Signature
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:.5rem;text-align:center;color:var(--muted)">
+        Authorized Signature
+      </div>
+    </div>
+    <div style="margin-top:.75rem;font-size:.72rem;color:var(--muted);text-align:center">
+      This is a computer generated delivery challan.
+    </div>`;
+        openModal('challan-modal');
+      }
+
+      function printChallan() { window.print(); }
+
+      function whatsappChallan() {
+        if (!_currentChallanOrder) return;
+        const o = _currentChallanOrder;
+        const biz = getBizSettings();
+        const msg = `*${biz.name || 'EmbroideryBill'} — Delivery Challan*\n\nChallan No: ${challanNumber(o.orderId)}\nOrder ID: ${o.orderId}\nCustomer: ${o.customerName}\nDesign: ${o.design || '—'}\nStitch Count: ${o.stitch.toLocaleString()}\nQty: ${o.qty}\nFabric: ${o.fabric || '—'}\nDelivery Date: ${o.delivery || '—'}\n\nThank you for your business!`;
+        window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+      }
+
+      // ── INVOICE ──────────────────────────────────────────────────────────────────
+      function openInvoice(id) {
+        const o = get('orders').find(x => x.id === id);
+        if (!o) return;
+        currentInvoiceOrder = o;
+        const customer = get('customers').find(c => c.id === o.customerId) || {};
+        const ps = derivePayStatus(o.orderId);
+        const paid = totalPaid(o.orderId);
+        const biz = getBizSettings();
+        document.getElementById('invoice-content').innerHTML = `
+    <div style="text-align:center;margin-bottom:1rem">
+      ${biz.logo ? `<img src="${biz.logo}" style="height:56px;object-fit:contain;margin-bottom:.5rem"/><br/>` : ''}
+      <div style="font-size:1.5rem;font-weight:700;color:var(--accent)">${biz.name || 'EmbroideryBill'}</div>
+      ${biz.address ? `<div style="font-size:.78rem;color:var(--muted)">${biz.address}</div>` : ''}
+      ${biz.phone ? `<div style="font-size:.78rem;color:var(--muted)">📞 ${biz.phone}</div>` : ''}
+      <div style="color:var(--muted);font-size:.8rem">Tax Invoice</div>
+    </div>
+    <hr style="border-color:var(--border);margin:.75rem 0"/>
+    <table style="width:100%">
+      <tr><td style="color:var(--muted)">Order ID</td><td style="text-align:right;font-family:monospace;font-weight:600">${o.orderId}</td></tr>
+      <tr><td style="color:var(--muted)">Date</td><td style="text-align:right">${new Date(o.date).toLocaleDateString('en-IN')}</td></tr>
+      <tr><td style="color:var(--muted)">Customer</td><td style="text-align:right;font-weight:600">${o.customerName}</td></tr>
+      <tr><td style="color:var(--muted)">Phone</td><td style="text-align:right">${customer.phone || '—'}</td></tr>
+      ${customer.gst ? `<tr><td style="color:var(--muted)">GST No.</td><td style="text-align:right">${customer.gst}</td></tr>` : ''}
+    </table>
+    <hr style="border-color:var(--border);margin:.75rem 0"/>
+    <table style="width:100%">
+      <tr><td style="color:var(--muted)">Design</td><td style="text-align:right">${o.design || '—'}</td></tr>
+      <tr><td style="color:var(--muted)">Fabric</td><td style="text-align:right">${o.fabric || '—'}</td></tr>
+      ${o.photo ? `<tr><td style="color:var(--muted)">Design Photo</td><td style="text-align:right"><img src="${o.photo}" style="height:60px;max-width:100px;object-fit:contain;border-radius:.3rem;border:1px solid var(--border)"/></td></tr>` : ''}
+      <tr><td style="color:var(--muted)">Stitch Count</td><td style="text-align:right">${o.stitch.toLocaleString()}</td></tr>
+      <tr><td style="color:var(--muted)">Rate / 1000</td><td style="text-align:right">₹${o.rate}</td></tr>
+      <tr><td style="color:var(--muted)">Quantity</td><td style="text-align:right">${o.qty}</td></tr>
+      <tr><td style="color:var(--muted)">Extra Charges</td><td style="text-align:right">₹${o.extra || 0}</td></tr>
+    </table>
+    <hr style="border-color:var(--border);margin:.75rem 0"/>
+    <div style="display:flex;justify-content:space-between;font-size:1.1rem;font-weight:700">
+      <span>Total Amount</span><span style="color:var(--accent)">₹${o.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:.4rem;font-size:.85rem">
+      <span style="color:var(--muted)">Amount Paid</span><span>₹${paid.toFixed(2)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:.85rem">
+      <span style="color:var(--muted)">Balance</span><span style="color:var(--danger);font-weight:600">₹${(o.total - paid).toFixed(2)}</span>
+    </div>
+    <div style="margin-top:.75rem;text-align:center">${payBadge(ps)}</div>`;
+        openModal('invoice-modal');
+      }
+      function printInvoice() { window.print() }
+      function whatsappShare() {
+        if (!currentInvoiceOrder) return;
+        const o = currentInvoiceOrder;
+        const msg = `*EmbroideryBill Invoice*\nOrder: ${o.orderId}\nCustomer: ${o.customerName}\nDesign: ${o.design || '—'}\nTotal: ₹${o.total}\nStatus: ${o.status}\nPayment: ${derivePayStatus(o.orderId)}`;
+        window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+      }
+    </script>
+
+    <script>
+      // ── DASHBOARD ────────────────────────────────────────────────────────────────
+      function renderDashboard() {
+        const orders = get('orders');
+        const today = new Date().toISOString().slice(0, 10);
+        const revenue = orders.reduce((a, o) => a + o.total, 0);
+        const todayCount = orders.filter(o => o.date && o.date.slice(0, 10) === today).length;
+        const pending = orders.filter(o => o.status === 'Pending').length;
+        const completed = orders.filter(o => o.status === 'Completed').length;
+        document.getElementById('kpi-revenue').textContent = '₹' + revenue.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        document.getElementById('kpi-revenue').title = '₹' + revenue.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        document.getElementById('kpi-today').textContent = todayCount;
+        document.getElementById('kpi-pending').textContent = pending;
+        document.getElementById('kpi-completed').textContent = completed;
+
+        // Weekly chart (last 7 days)
+        const days = [];
+        for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(d.toISOString().slice(0, 10)); }
+        const weeklyData = days.map(d => ({
+          label: new Date(d).toLocaleDateString('en-IN', { weekday: 'short' }),
+          rev: orders.filter(o => o.date && o.date.slice(0, 10) === d).reduce((a, o) => a + o.total, 0)
+        }));
+        const maxRev = Math.max(...weeklyData.map(d => d.rev), 1);
+        document.getElementById('weekly-chart').innerHTML = weeklyData.map(d => `
+    <div class="bar-wrap">
+      <div class="bar" style="height:${Math.max((d.rev / maxRev) * 100, 4)}px" title="₹${d.rev}"></div>
+      <div class="bar-label">${d.label}</div>
+    </div>`).join('');
+
+        // Recent orders
+        const recent = orders.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+        document.getElementById('recent-orders-body').innerHTML = recent.length ? recent.map(o => `
+    <tr>
+      <td style="font-family:monospace">${o.orderId}</td>
+      <td>${o.customerName}</td>
+      <td>₹${o.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td>${payBadge(derivePayStatus(o.orderId))}</td>
+    </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">No orders yet</td></tr>';
+      }
+
+      // ── REPORTS ──────────────────────────────────────────────────────────────────
+      function renderReports() {
+        const orders = get('orders');
+        // Monthly chart (last 12 months)
+        const months = [];
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
+          months.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }) });
+        }
+        const monthlyData = months.map(m => ({
+          label: m.label,
+          rev: orders.filter(o => o.date && o.date.slice(0, 7) === m.key).reduce((a, o) => a + o.total, 0)
+        }));
+        const maxM = Math.max(...monthlyData.map(d => d.rev), 1);
+        document.getElementById('monthly-chart').innerHTML = monthlyData.map(d => `
+    <div class="bar-wrap">
+      <div class="bar" style="height:${Math.max((d.rev / maxM) * 100, 4)}px" title="₹${d.rev}"></div>
+      <div class="bar-label">${d.label}</div>
+    </div>`).join('');
+
+        // Top customers
+        const custMap = {};
+        orders.forEach(o => { if (!custMap[o.customerId]) custMap[o.customerId] = { name: o.customerName, phone: '', total: 0 }; custMap[o.customerId].total += o.total; });
+        get('customers').forEach(c => { if (custMap[c.id]) custMap[c.id].phone = c.phone; });
+        const top = Object.values(custMap).sort((a, b) => b.total - a.total).slice(0, 10);
+        document.getElementById('top-customers-body').innerHTML = top.length ? top.map((c, i) => `
+    <tr><td>${i + 1}</td><td>${c.name}</td><td>${c.phone || '—'}</td><td>₹${c.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1.5rem">No data</td></tr>';
+
+        // Pending payments
+        const pending = orders.filter(o => derivePayStatus(o.orderId) !== 'Paid').map(o => ({
+          orderId: o.orderId, customer: o.customerName, total: o.total, paid: totalPaid(o.orderId), balance: o.total - totalPaid(o.orderId)
+        })).filter(o => o.balance > 0);
+        document.getElementById('pending-payments-body').innerHTML = pending.length ? pending.map(p => `
+    <tr>
+      <td style="font-family:monospace">${p.orderId}</td><td>${p.customer}</td>
+      <td>₹${p.total.toFixed(2)}</td><td>₹${p.paid.toFixed(2)}</td>
+      <td style="color:var(--danger);font-weight:600">₹${p.balance.toFixed(2)}</td>
+    </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1.5rem">No outstanding payments</td></tr>';
+
+        // Set default export dates
+        const t = new Date().toISOString().slice(0, 10);
+        document.getElementById('export-to').value = t;
+        document.getElementById('export-from').value = new Date().getFullYear() + '-01-01';
+        // Set today as default for per-day report
+        document.getElementById('perday-date').value = t;
+        renderPerDayReport();
+      }
+
+      function renderPerDayReport() {
+        const date = document.getElementById('perday-date').value;
+        const empty = document.getElementById('perday-empty');
+        if (!date) { empty.style.display = 'block'; return; }
+        empty.style.display = 'none';
+
+        const orders = get('orders').filter(o => o.date && o.date.slice(0, 10) === date);
+        const payments = get('payments').filter(p => p.date === date);
+        const salary = get('salary_history').filter(h => h.date === date);
+
+        const totalOrders = orders.reduce((a, o) => a + o.total, 0);
+        const totalReceived = payments.reduce((a, p) => a + p.amount, 0);
+        const totalStaff = salary.reduce((a, h) => a + h.amount, 0);
+
+        // Summary cards
+        document.getElementById('perday-summary').innerHTML = `
+    <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:.5rem;padding:.75rem;text-align:center">
+      <div style="font-size:1.1rem;font-weight:700;color:var(--accent)">${orders.length}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Orders</div>
+    </div>
+    <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:.5rem;padding:.75rem;text-align:center">
+      <div style="font-size:1.1rem;font-weight:700;color:#16a34a">₹${totalOrders.toLocaleString('en-IN')}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Order Value</div>
+    </div>
+    <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:.5rem;padding:.75rem;text-align:center">
+      <div style="font-size:1.1rem;font-weight:700;color:#2563eb">₹${totalReceived.toLocaleString('en-IN')}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Payments Received</div>
+    </div>
+    <div style="background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);border-radius:.5rem;padding:.75rem;text-align:center">
+      <div style="font-size:1.1rem;font-weight:700;color:#7c3aed">₹${totalStaff.toLocaleString('en-IN')}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Staff Paid</div>
+    </div>
+    <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:.5rem;padding:.75rem;text-align:center">
+      <div style="font-size:1.1rem;font-weight:700;color:#059669">₹${(totalReceived - totalStaff).toLocaleString('en-IN')}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Net (Received−Staff)</div>
+    </div>`;
+
+        // Orders table
+        const ow = document.getElementById('perday-orders-wrap');
+        ow.style.display = orders.length ? 'block' : 'none';
+        document.getElementById('perday-orders-body').innerHTML = orders.map(o => `
+    <tr>
+      <td style="font-family:monospace">${o.orderId}</td>
+      <td>${o.customerName}</td><td>${o.design || '—'}</td>
+      <td>₹${o.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+      <td>${statusBadge(o.status)}</td><td>${payBadge(derivePayStatus(o.orderId))}</td>
+    </tr>`).join('');
+
+        // Payments table
+        const pw = document.getElementById('perday-payments-wrap');
+        pw.style.display = payments.length ? 'block' : 'none';
+        document.getElementById('perday-payments-body').innerHTML = payments.map(p => `
+    <tr>
+      <td style="font-family:monospace">${p.orderId}</td>
+      <td>${p.customerName || '—'}</td>
+      <td>₹${p.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+      <td>${p.method}</td>
+    </tr>`).join('');
+
+        // Salary table
+        const sw = document.getElementById('perday-salary-wrap');
+        sw.style.display = salary.length ? 'block' : 'none';
+        document.getElementById('perday-salary-body').innerHTML = salary.map(h => `
+    <tr>
+      <td>${h.staffName}</td>
+      <td><span class="badge ${h.type === 'Salary' ? 'badge-green' : 'badge-orange'}">${h.type}</span></td>
+      <td>₹${h.amount.toLocaleString('en-IN')}</td>
+      <td>${h.note || '—'}</td>
+    </tr>`).join('');
+      }
+
+      function downloadPerDayReport() {
+        const date = document.getElementById('perday-date').value;
+        if (!date) { toast('Please select a date first'); return; }
+
+        const orders = get('orders').filter(o => o.date && o.date.slice(0, 10) === date);
+        const payments = get('payments').filter(p => p.date === date);
+        const salary = get('salary_history').filter(h => h.date === date);
+
+        const totalOrders = orders.reduce((a, o) => a + o.total, 0);
+        const totalReceived = payments.reduce((a, p) => a + p.amount, 0);
+        const totalStaff = salary.reduce((a, h) => a + h.amount, 0);
+
+        const rows = [
+          [`=== DAY REPORT: ${date} ===`, '', '', '', ''],
+          ['Generated', new Date().toLocaleString('en-IN'), '', '', ''],
+          [],
+          ['=== SUMMARY ===', '', '', '', ''],
+          ['Total Orders', orders.length, '', '', ''],
+          ['Total Order Value (₹)', totalOrders, '', '', ''],
+          ['Total Payments Received (₹)', totalReceived, '', '', ''],
+          ['Total Staff Paid (₹)', totalStaff, '', '', ''],
+          ['Net (Received − Staff) (₹)', totalReceived - totalStaff, '', '', ''],
+          [],
+          ['=== ORDERS ===', '', '', '', ''],
+          ['Order ID', 'Customer', 'Design', 'Total (₹)', 'Status', 'Payment'],
+          ...orders.map(o => [o.orderId, o.customerName, o.design || '', o.total, o.status, derivePayStatus(o.orderId)]),
+          [],
+          ['=== PAYMENTS ===', '', '', '', ''],
+          ['Order ID', 'Customer', 'Amount (₹)', 'Method', ''],
+          ...payments.map(p => [p.orderId, p.customerName || '', p.amount, p.method, '']),
+          [],
+          ['=== STAFF PAYMENTS ===', '', '', '', ''],
+          ['Staff Name', 'Type', 'Amount (₹)', 'Note', ''],
+          ...salary.map(h => [h.staffName, h.type, h.amount, h.note || '', ''])
+        ];
+        csvDownload(`day-report-${date}.csv`, rows);
+        toast(`Day report for ${date} downloaded`);
+      }
+
+
+      function csvDownload(filename, rows) {
+        const csv = rows.map(r => r.map(c => '"' + (String(c || '').replace(/"/g, '""')) + '"').join(',')).join('\n');
+        const a = document.createElement('a');
+        a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+        a.download = filename;
+        a.click();
+      }
+
+      function getDateRange() {
+        return { from: document.getElementById('export-from').value, to: document.getElementById('export-to').value };
+      }
+
+      function filterByDate(items, dateField, from, to) {
+        return items.filter(o => {
+          const d = (o[dateField] || '').slice(0, 10);
+          return (!from || d >= from) && (!to || d <= to);
+        });
+      }
+
+      function downloadOrdersReport(from, to) {
+        const { from: f, to: t } = from !== undefined ? { from, to } : getDateRange();
+        const orders = filterByDate(get('orders'), 'date', f, t);
+        const rows = [
+          ['Order ID', 'Customer', 'Design', 'Fabric', 'Stitch Count', 'Rate', 'Qty', 'Extra Charges', 'Total (₹)', 'Status', 'Payment Status', 'Delivery Date', 'Created Date'],
+          ...orders.map(o => [o.orderId, o.customerName, o.design || '', o.fabric || '', o.stitch, o.rate, o.qty, o.extra || 0, o.total, o.status, derivePayStatus(o.orderId), o.delivery || '', o.date ? o.date.slice(0, 10) : ''])
+        ];
+        csvDownload(`orders-report-${f || 'all'}-${t || 'all'}.csv`, rows);
+        toast('Orders report downloaded');
+      }
+
+      function downloadPaymentsReport() {
+        const { from, to } = getDateRange();
+        const payments = filterByDate(get('payments'), 'date', from, to);
+        const rows = [
+          ['Order ID', 'Customer', 'Amount Paid (₹)', 'Method', 'Payment Date'],
+          ...payments.map(p => [p.orderId, p.customerName || '', p.amount, p.method, p.date])
+        ];
+        csvDownload(`payments-report-${from || 'all'}-${to || 'all'}.csv`, rows);
+        toast('Payments report downloaded');
+      }
+
+      function downloadSalaryReport() {
+        const { from, to } = getDateRange();
+        const history = filterByDate(get('salary_history'), 'date', from, to);
+        const rows = [
+          ['Staff Name', 'Type', 'Amount (₹)', 'Month/Date', 'Note/Reason'],
+          ...history.map(h => [h.staffName, h.type, h.amount, h.type === 'Salary' ? h.month : h.date, h.note || ''])
+        ];
+        // Summary rows
+        const totalSal = history.filter(h => h.type === 'Salary').reduce((a, h) => a + h.amount, 0);
+        const totalAdv = history.filter(h => h.type === 'Advance').reduce((a, h) => a + h.amount, 0);
+        rows.push([]);
+        rows.push(['SUMMARY', '', '', '', '']);
+        rows.push(['Total Salary Paid', '₹' + totalSal, '', '', '']);
+        rows.push(['Total Advance Given', '₹' + totalAdv, '', '', '']);
+        rows.push(['Total Staff Expense', '₹' + (totalSal + totalAdv), '', '', '']);
+        csvDownload(`salary-report-${from || 'all'}-${to || 'all'}.csv`, rows);
+        toast('Salary report downloaded');
+      }
+
+      function downloadFullReport() {
+        const { from, to } = getDateRange();
+        const orders = filterByDate(get('orders'), 'date', from, to);
+        const payments = filterByDate(get('payments'), 'date', from, to);
+        const salary = filterByDate(get('salary_history'), 'date', from, to);
+
+        const totalRevenue = orders.reduce((a, o) => a + o.total, 0);
+        const totalReceived = payments.reduce((a, p) => a + p.amount, 0);
+        const totalSalary = salary.filter(h => h.type === 'Salary').reduce((a, h) => a + h.amount, 0);
+        const totalAdvance = salary.filter(h => h.type === 'Advance').reduce((a, h) => a + h.amount, 0);
+        const netProfit = totalReceived - totalSalary - totalAdvance;
+
+        const rows = [
+          ['=== FULL BUSINESS REPORT ===', '', '', ''],
+          ['Period', `${from || 'All'} to ${to || 'All'}`, '', ''],
+          ['Generated', new Date().toLocaleString('en-IN'), '', ''],
+          [],
+          ['=== SUMMARY ===', '', '', ''],
+          ['Total Order Value (₹)', totalRevenue, '', ''],
+          ['Total Payments Received (₹)', totalReceived, '', ''],
+          ['Total Salary Paid (₹)', totalSalary, '', ''],
+          ['Total Advance Given (₹)', totalAdvance, '', ''],
+          ['Net Profit (₹)', netProfit, '', ''],
+          [],
+          ['=== ORDERS ===', '', '', ''],
+          ['Order ID', 'Customer', 'Total (₹)', 'Status', 'Payment Status', 'Date'],
+          ...orders.map(o => [o.orderId, o.customerName, o.total, o.status, derivePayStatus(o.orderId), o.date ? o.date.slice(0, 10) : '']),
+          [],
+          ['=== PAYMENTS ===', '', '', ''],
+          ['Order ID', 'Customer', 'Amount (₹)', 'Method', 'Date'],
+          ...payments.map(p => [p.orderId, p.customerName || '', p.amount, p.method, p.date]),
+          [],
+          ['=== STAFF SALARY & ADVANCE ===', '', '', ''],
+          ['Staff Name', 'Type', 'Amount (₹)', 'Month/Date', 'Note'],
+          ...salary.map(h => [h.staffName, h.type, h.amount, h.type === 'Salary' ? h.month : h.date, h.note || ''])
+        ];
+        csvDownload(`full-report-${from || 'all'}-${to || 'all'}.csv`, rows);
+        toast('Full report downloaded');
+      }
+
+      // ── INVENTORY ─────────────────────────────────────────────────────────────────
+      function getInventory() { return get('inventory'); }
+
+      function openInventoryModal(id) {
+        document.getElementById('inventory-edit-id').value = id || '';
+        document.getElementById('inventory-modal-title').textContent = id ? 'Edit Item' : 'Add Item';
+        if (id) {
+          const item = getInventory().find(x => x.id === id);
+          document.getElementById('inv-name').value = item.name;
+          document.getElementById('inv-type').value = item.type;
+          document.getElementById('inv-color').value = item.color || '';
+          document.getElementById('inv-unit').value = item.unit;
+          document.getElementById('inv-stock-in').value = item.stockIn;
+          document.getElementById('inv-stock-used').value = item.stockUsed;
+          document.getElementById('inv-note').value = item.note || '';
+        } else {
+          ['inv-name', 'inv-color', 'inv-note'].forEach(i => document.getElementById(i).value = '');
+          document.getElementById('inv-stock-in').value = 0;
+          document.getElementById('inv-stock-used').value = 0;
+          document.getElementById('inv-type').value = 'Thread';
+          document.getElementById('inv-unit').value = 'Cone';
+        }
+        openModal('inventory-modal');
+      }
+
+      function saveInventory() {
+        const name = document.getElementById('inv-name').value.trim();
+        if (!name) { toast('Item name required'); return; }
+        const stockIn = +document.getElementById('inv-stock-in').value || 0;
+        const stockUsed = +document.getElementById('inv-stock-used').value || 0;
+        const id = document.getElementById('inventory-edit-id').value;
+        const inventory = getInventory();
+        const obj = { id: id || uid(), name, type: document.getElementById('inv-type').value, color: document.getElementById('inv-color').value.trim(), unit: document.getElementById('inv-unit').value, stockIn, stockUsed, remaining: stockIn - stockUsed, note: document.getElementById('inv-note').value.trim(), updatedAt: new Date().toISOString().slice(0, 10) };
+        if (id) { const i = inventory.findIndex(x => x.id === id); inventory[i] = obj; }
+        else inventory.push(obj);
+        set('inventory', inventory);
+        closeModal('inventory-modal');
+        renderInventory();
+        toast(id ? 'Item updated' : 'Item added');
+      }
+
+      function deleteInventoryItem(id) {
+        if (!confirm('Delete this item?')) return;
+        set('inventory', getInventory().filter(x => x.id !== id));
+        renderInventory();
+        toast('Item deleted');
+      }
+
+      function clearInventory() {
+        if (!confirm('Saara stock data delete karo?')) return;
+        set('inventory', []);
+        renderInventory();
+        toast('Inventory cleared ✓');
+      }
+
+      function renderInventory() {
+        const sq = (document.getElementById('inventory-search').value || '').toLowerCase();
+        const cat = document.getElementById('inventory-cat-filter').value;
+        let items = getInventory();
+        if (sq) items = items.filter(i => (i.name || '').toLowerCase().includes(sq) || (i.color || '').toLowerCase().includes(sq));
+        if (cat) items = items.filter(i => i.type === cat);
+
+        const totalItems = items.length;
+        const lowStock = items.filter(i => (i.remaining || 0) <= 2 && (i.remaining || 0) >= 0).length;
+        const outOfStock = items.filter(i => (i.remaining || 0) <= 0).length;
+
+        document.getElementById('inventory-summary').innerHTML = `
+    <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:.75rem;padding:1rem;text-align:center">
+      <div style="font-size:1.3rem;font-weight:700;color:#16a34a">${totalItems}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Total Items</div>
+    </div>
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:.75rem;padding:1rem;text-align:center">
+      <div style="font-size:1.3rem;font-weight:700;color:var(--accent)">${lowStock}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Low Stock (≤2)</div>
+    </div>
+    <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:.75rem;padding:1rem;text-align:center">
+      <div style="font-size:1.3rem;font-weight:700;color:var(--danger)">${outOfStock}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Out of Stock</div>
+    </div>`;
+
+        document.getElementById('inventory-body').innerHTML = items.length ? items.map(item => {
+          const rem = item.remaining || 0;
+          const remColor = rem <= 0 ? 'var(--danger)' : rem <= 2 ? 'var(--accent)' : 'var(--success)';
+          return `<tr>
+      <td style="font-weight:600">${item.name}</td>
+      <td><span class="badge badge-blue">${item.type}</span></td>
+      <td>${item.color || '—'}</td>
+      <td>${item.stockIn} ${item.unit}</td>
+      <td>${item.stockUsed} ${item.unit}</td>
+      <td style="font-weight:700;color:${remColor}">${rem} ${item.unit}</td>
+      <td>${item.unit}</td>
+      <td>${item.updatedAt || '—'}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openInventoryModal('${item.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:.3rem" onclick="deleteInventoryItem('${item.id}')">Del</button>
+      </td>
+    </tr>`;
+        }).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem">Koi item nahi — Add karo</td></tr>';
+      }
+
+      // ── EXPENSES ──────────────────────────────────────────────────────────────────
+      function getExpenses() { return get('expenses'); }
+
+      function openExpenseModal(id) {
+        document.getElementById('expense-edit-id').value = id || '';
+        document.getElementById('expense-modal-title').textContent = id ? 'Edit Karcha' : 'Add Karcha';
+
+        // Set category options based on current type
+        const expType = id ? (getExpenses().find(x => x.id === id) || {}).type || 'business' : currentExpenseType;
+        document.getElementById('exp-type').value = expType;
+        updateExpenseModalCategories(expType);
+
+        if (id) {
+          const e = getExpenses().find(x => x.id === id);
+          document.getElementById('exp-date').value = e.date;
+          document.getElementById('exp-category').value = e.category;
+          document.getElementById('exp-desc').value = e.desc || '';
+          document.getElementById('exp-amount').value = e.amount;
+        } else {
+          document.getElementById('exp-date').value = new Date().toISOString().slice(0, 10);
+          document.getElementById('exp-desc').value = '';
+          document.getElementById('exp-amount').value = '';
+        }
+        openModal('expense-modal');
+      }
+
+      function updateExpenseModalCategories(type) {
+        const sel = document.getElementById('exp-category');
+        if (type === 'home') {
+          sel.innerHTML = '<option>Grocery/Rashan</option><option>School Fee</option><option>Bijli/Paani Bill</option><option>Doctor/Dawai</option><option>Other</option>';
+        } else {
+          sel.innerHTML = '<option>Machine Repair</option><option>Electricity</option><option>Rent</option><option>Transport</option><option>Food & Tea</option><option>Other</option>';
+        }
+      }
+
+      function saveExpense() {
+        const amount = +document.getElementById('exp-amount').value;
+        const date = document.getElementById('exp-date').value;
+        if (!date) { toast('Date required'); return; }
+        if (!amount || amount <= 0) { toast('Amount must be > 0'); return; }
+        const id = document.getElementById('expense-edit-id').value;
+        const expType = document.getElementById('exp-type').value || currentExpenseType;
+        const expenses = getExpenses();
+        const obj = { id: id || uid(), date, type: expType, category: document.getElementById('exp-category').value, desc: document.getElementById('exp-desc').value.trim(), amount };
+        if (id) { const i = expenses.findIndex(e => e.id === id); expenses[i] = obj; }
+        else expenses.push(obj);
+        set('expenses', expenses);
+        closeModal('expense-modal');
+        renderExpenses();
+        toast(id ? 'Karcha updated' : 'Karcha added');
+      }
+
+      function deleteExpense(id) {
+        if (!confirm('Delete this karcha?')) return;
+        set('expenses', getExpenses().filter(e => e.id !== id));
+        renderExpenses();
+        toast('Karcha deleted');
+      }
+
+      function removeExpenseMember(id) {
+        const expenses = getExpenses();
+        const idx = expenses.findIndex(e => e.id === id);
+        if (idx === -1) { toast('Expense not found'); return; }
+        if (!expenses[idx].memberId) { toast('No member assigned'); return; }
+        if (!confirm('Is expense se member hatana hai?')) return;
+        expenses[idx].memberId = '';
+        set('expenses', expenses);
+        renderExpenses();
+        toast('Member removed from expense');
+      }
+
+      function clearAllExpenses() {
+        if (!confirm('Saare kharche delete karo?')) return;
+        set('expenses', []);
+        renderExpenses();
+        toast('Saare kharche clear ho gaye ✓');
+      }
+
+      // ── MEMBER BUDGET ────────────────────────────────────────────────────────
+      function getMembers() { return get('members'); }
+      function getMemberExpenses() { return get('member_expenses'); }
+
+      let activeMemberId = null;
+
+      function renderMemberCards() {
+        const members = getMembers();
+        const allExp = getMemberExpenses();
+        const thisMonth = new Date().toISOString().slice(0, 7);
+        const el = document.getElementById('member-cards');
+        if (!el) return;
+
+        if (!members.length) {
+          el.innerHTML = '<p style="color:var(--muted);font-size:.9rem">Koi member nahi. "+ Add Member" se add karo.</p>';
+          return;
+        }
+
+        el.innerHTML = members.map(m => {
+          const spent = allExp.filter(e => e.memberId === m.id && e.date && e.date.slice(0, 7) === thisMonth).reduce((a, e) => a + e.amount, 0);
+          const total = allExp.filter(e => e.memberId === m.id).reduce((a, e) => a + e.amount, 0);
+
+          return `<div class="card" style="cursor:pointer" onclick="openMemberDetail('${m.id}')">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+              <div style="font-weight:700;font-size:1rem">👤 ${m.name}</div>
+              <div style="display:flex;gap:.4rem">
+                <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openMemberModal('${m.id}')">✏️</button>
+                <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="event.stopPropagation();deleteMember('${m.id}')">🗑</button>
+              </div>
+            </div>
+            <div style="font-size:.85rem;color:var(--muted);margin-bottom:.35rem">Is Mahine: <strong style="color:var(--danger)">₹${spent.toLocaleString('en-IN')}</strong></div>
+            <div style="font-size:.85rem;color:var(--muted)">Total Karcha: <strong style="color:var(--text)">₹${total.toLocaleString('en-IN')}</strong></div>
+          </div>`;
+        }).join('');
+      }
+
+      function renderMemberCardsInline() {
+        const members = getMembers();
+        const allExp = getMemberExpenses();
+        const thisMonth = new Date().toISOString().slice(0, 7);
+        const el = document.getElementById('member-cards-inline');
+        if (!el) return;
+
+        if (!members.length) {
+          el.innerHTML = '<p style="color:var(--muted);font-size:.85rem">Koi member nahi. "+ Add Member" se add karo.</p>';
+          return;
+        }
+
+        el.innerHTML = members.map(m => {
+          const spent = allExp.filter(e => e.memberId === m.id && e.date && e.date.slice(0, 7) === thisMonth).reduce((a, e) => a + e.amount, 0);
+          const total = allExp.filter(e => e.memberId === m.id).reduce((a, e) => a + e.amount, 0);
+
+          return `<div class="card" style="cursor:pointer" onclick="openMemberDetailInline('${m.id}')">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+              <div style="font-weight:700;font-size:1rem">👤 ${m.name}</div>
+              <div style="display:flex;gap:.4rem">
+                <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openMemberModal('${m.id}')">✏️</button>
+                <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="event.stopPropagation();deleteMemberInline('${m.id}')">🗑</button>
+              </div>
+            </div>
+            <div style="font-size:.85rem;color:var(--muted);margin-bottom:.35rem">Is Mahine: <strong style="color:var(--danger)">₹${spent.toLocaleString('en-IN')}</strong></div>
+            <div style="font-size:.85rem;color:var(--muted)">Total Karcha: <strong style="color:var(--text)">₹${total.toLocaleString('en-IN')}</strong></div>
+          </div>`;
+        }).join('');
+      }
+
+      function openMemberDetailInline(id) {
+        activeMemberId = id;
+        const m = getMembers().find(x => x.id === id);
+        document.getElementById('member-detail-inline-name').textContent = '👤 ' + m.name;
+        document.getElementById('member-cards-inline').style.display = 'none';
+        document.querySelector('#member-section > div:first-child').style.display = 'none';
+        document.getElementById('member-detail-inline').style.display = 'block';
+        renderMemberDetailInline();
+      }
+
+      function closeMemberDetailInline() {
+        activeMemberId = null;
+        document.getElementById('member-detail-inline').style.display = 'none';
+        document.getElementById('member-cards-inline').style.display = 'grid';
+        document.querySelector('#member-section > div:first-child').style.display = 'flex';
+        renderMemberCardsInline();
+      }
+
+      function renderMemberDetailInline() {
+        if (!activeMemberId) return;
+        const allExp = getMemberExpenses().filter(e => e.memberId === activeMemberId).sort((a, b) => new Date(b.date) - new Date(a.date));
+        const thisMonth = new Date().toISOString().slice(0, 7);
+        const spent = allExp.filter(e => e.date && e.date.slice(0, 7) === thisMonth).reduce((a, e) => a + e.amount, 0);
+        const total = allExp.reduce((a, e) => a + e.amount, 0);
+
+        document.getElementById('member-detail-inline-summary').innerHTML = `
+          <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:.75rem;padding:1rem;text-align:center">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--danger)">₹${spent.toLocaleString('en-IN')}</div>
+            <div style="font-size:.75rem;color:var(--muted)">Is Mahine ka Karcha</div>
+          </div>
+          <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:.75rem;padding:1rem;text-align:center">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--accent)">₹${total.toLocaleString('en-IN')}</div>
+            <div style="font-size:.75rem;color:var(--muted)">Total Karcha (Sab)</div>
+          </div>`;
+
+        document.getElementById('member-expenses-inline-body').innerHTML = allExp.length ? allExp.map(e => `
+          <tr>
+            <td>${e.date}</td>
+            <td>${e.desc || '—'}</td>
+            <td style="font-weight:600;color:var(--danger)">₹${e.amount.toLocaleString('en-IN')}</td>
+            <td>
+              <button class="btn btn-ghost btn-sm" onclick="openMemberExpenseModal('${e.id}')">✏️</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteMemberExpenseInline('${e.id}')">🗑</button>
+            </td>
+          </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Koi karcha nahi</td></tr>';
+      }
+
+      function deleteMemberInline(id) {
+        if (!confirm('Is member ko delete karo?')) return;
+        set('members', getMembers().filter(m => m.id !== id));
+        set('member_expenses', getMemberExpenses().filter(e => e.memberId !== id));
+        renderMemberCardsInline();
+        toast('Member deleted');
+      }
+
+      function deleteMemberExpenseInline(id) {
+        if (!confirm('Delete this karcha?')) return;
+        set('member_expenses', getMemberExpenses().filter(e => e.id !== id));
+        renderMemberDetailInline();
+        toast('Karcha deleted');
+      }
+
+      // ── RASHAN TRACKER ───────────────────────────────────────────────────────
+      function getRashan() { return get('rashan'); }
+
+      function openRashanModal(id) {
+        document.getElementById('rashan-edit-id').value = id || '';
+        document.getElementById('rashan-modal-title').textContent = id ? 'Edit Rashan' : 'Add Rashan';
+
+        // Populate member dropdown
+        const members = getMembers();
+        const sel = document.getElementById('rashan-member');
+        sel.innerHTML = '<option value="">-- Select Member --</option>' +
+          members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+
+        if (id) {
+          const r = getRashan().find(x => x.id === id);
+          document.getElementById('rashan-month').value = r.month;
+          sel.value = r.memberId;
+          document.getElementById('rashan-amount').value = r.amount;
+          document.getElementById('rashan-note').value = r.note || '';
+        } else {
+          document.getElementById('rashan-month').value = new Date().toISOString().slice(0, 7);
+          sel.value = '';
+          document.getElementById('rashan-amount').value = '';
+          document.getElementById('rashan-note').value = '';
+        }
+        openModal('rashan-modal');
+      }
+
+      function saveRashan() {
+        const month = document.getElementById('rashan-month').value;
+        const memberId = document.getElementById('rashan-member').value;
+        const amount = +document.getElementById('rashan-amount').value;
+        const note = document.getElementById('rashan-note').value.trim();
+        if (!month) { toast('Month required'); return; }
+        if (!memberId) { toast('Member select karo'); return; }
+        if (!amount || amount <= 0) { toast('Amount must be > 0'); return; }
+        const id = document.getElementById('rashan-edit-id').value;
+        const rashan = getRashan();
+        const obj = { id: id || uid(), month, memberId, amount, note };
+        if (id) { const i = rashan.findIndex(r => r.id === id); rashan[i] = obj; }
+        else rashan.push(obj);
+        set('rashan', rashan);
+        closeModal('rashan-modal');
+        renderRashanTable();
+        toast(id ? 'Rashan updated ✓' : 'Rashan added ✓');
+      }
+
+      function deleteRashan(id) {
+        if (!confirm('Delete this rashan entry?')) return;
+        set('rashan', getRashan().filter(r => r.id !== id));
+        renderRashanTable();
+        toast('Deleted');
+      }
+
+      function renderRashanTable() {
+        const members = getMembers();
+        const allRashan = getRashan().sort((a, b) => b.month.localeCompare(a.month));
+        const monthFilter = document.getElementById('rashan-month-filter') ? document.getElementById('rashan-month-filter').value : '';
+        const filtered = monthFilter ? allRashan.filter(r => r.month === monthFilter) : allRashan;
+
+        const getMemberName = id => (members.find(m => m.id === id) || {}).name || '—';
+
+        document.getElementById('rashan-body').innerHTML = filtered.length ? filtered.map(r => `
+          <tr>
+            <td>${r.month}</td>
+            <td>${getMemberName(r.memberId)}</td>
+            <td style="font-weight:600;color:var(--danger)">₹${r.amount.toLocaleString('en-IN')}</td>
+            <td style="color:var(--muted)">${r.note || '—'}</td>
+            <td>
+              <button class="btn btn-ghost btn-sm" onclick="openRashanModal('${r.id}')">✏️</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteRashan('${r.id}')">🗑</button>
+            </td>
+          </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Koi rashan entry nahi</td></tr>';
+
+        // Monthly summary per member
+        const monthMap = {};
+        allRashan.forEach(r => {
+          const key = r.month;
+          if (!monthMap[key]) monthMap[key] = { total: 0, members: {} };
+          monthMap[key].total += r.amount;
+          const name = getMemberName(r.memberId);
+          monthMap[key].members[name] = (monthMap[key].members[name] || 0) + r.amount;
+        });
+
+        const months = Object.keys(monthMap).sort().reverse().slice(0, 6);
+        document.getElementById('rashan-summary').innerHTML = months.map(m => `
+          <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:.75rem;padding:.75rem 1rem">
+            <div style="font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:.4rem">📅 ${m}</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--success)">₹${monthMap[m].total.toLocaleString('en-IN')}</div>
+            ${Object.entries(monthMap[m].members).map(([name, amt]) =>
+          `<div style="font-size:.75rem;color:var(--muted);margin-top:.2rem">${name}: ₹${amt.toLocaleString('en-IN')}</div>`
+        ).join('')}
+          </div>`).join('');
+      }
+      // ── END RASHAN TRACKER ───────────────────────────────────────────────────
+
+      function openMemberModal(id) {
+        document.getElementById('member-edit-id').value = id || '';
+        document.getElementById('member-modal-title').textContent = id ? 'Edit Member' : 'Add Member';
+        if (id) {
+          const m = getMembers().find(x => x.id === id);
+          document.getElementById('member-name').value = m.name;
+        } else {
+          document.getElementById('member-name').value = '';
+        }
+        openModal('member-modal');
+      }
+
+      function saveMember() {
+        const name = document.getElementById('member-name').value.trim();
+        if (!name) { toast('Name required'); return; }
+        const id = document.getElementById('member-edit-id').value;
+        const members = getMembers();
+        const obj = { id: id || uid(), name };
+        if (id) { const i = members.findIndex(m => m.id === id); members[i] = obj; }
+        else members.push(obj);
+        set('members', members);
+        closeModal('member-modal');
+        renderMemberCards();
+        if (currentExpenseType === 'home') renderMemberCardsInline();
+        renderRashanTable();
+        toast(id ? 'Member updated' : 'Member added ✓');
+      }
+
+      function deleteMember(id) {
+        if (!confirm('Is member ko delete karo?')) return;
+        set('members', getMembers().filter(m => m.id !== id));
+        set('member_expenses', getMemberExpenses().filter(e => e.memberId !== id));
+        renderMemberCards();
+        toast('Member deleted');
+      }
+
+      function openMemberDetail(id) {
+        activeMemberId = id;
+        const m = getMembers().find(x => x.id === id);
+        document.getElementById('member-detail-name').textContent = '👤 ' + m.name;
+        document.getElementById('member-cards').style.display = 'none';
+        document.querySelector('#page-member-budget > .page-header').style.display = 'none';
+        document.getElementById('member-detail').style.display = 'block';
+        renderMemberDetail();
+      }
+
+      function closeMemberDetail() {
+        activeMemberId = null;
+        document.getElementById('member-detail').style.display = 'none';
+        document.getElementById('member-cards').style.display = 'grid';
+        document.querySelector('#page-member-budget > .page-header').style.display = 'flex';
+        renderMemberCards();
+      }
+
+      function renderMemberDetail() {
+        if (!activeMemberId) return;
+        const m = getMembers().find(x => x.id === activeMemberId);
+        const allExp = getMemberExpenses().filter(e => e.memberId === activeMemberId).sort((a, b) => new Date(b.date) - new Date(a.date));
+        const thisMonth = new Date().toISOString().slice(0, 7);
+        const monthExp = allExp.filter(e => e.date && e.date.slice(0, 7) === thisMonth);
+        const spent = monthExp.reduce((a, e) => a + e.amount, 0);
+        const total = allExp.reduce((a, e) => a + e.amount, 0);
+
+        document.getElementById('member-detail-summary').innerHTML = `
+          <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:.75rem;padding:1rem;text-align:center">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--danger)">₹${spent.toLocaleString('en-IN')}</div>
+            <div style="font-size:.75rem;color:var(--muted)">Is Mahine ka Karcha</div>
+          </div>
+          <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:.75rem;padding:1rem;text-align:center">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--accent)">₹${total.toLocaleString('en-IN')}</div>
+            <div style="font-size:.75rem;color:var(--muted)">Total Karcha (Sab)</div>
+          </div>`;
+
+        document.getElementById('member-expenses-body').innerHTML = allExp.length ? allExp.map(e => `
+          <tr>
+            <td>${e.date}</td>
+            <td>${e.desc || '—'}</td>
+            <td style="font-weight:600;color:var(--danger)">₹${e.amount.toLocaleString('en-IN')}</td>
+            <td>
+              <button class="btn btn-ghost btn-sm" onclick="openMemberExpenseModal('${e.id}')">✏️</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteMemberExpense('${e.id}')">🗑</button>
+            </td>
+          </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Koi karcha nahi</td></tr>';
+      }
+
+      function openMemberExpenseModal(id) {
+        document.getElementById('me-edit-id').value = id || '';
+        document.getElementById('me-member-id').value = activeMemberId;
+        document.getElementById('member-expense-title').textContent = id ? 'Edit Karcha' : 'Add Karcha';
+        if (id) {
+          const e = getMemberExpenses().find(x => x.id === id);
+          document.getElementById('me-date').value = e.date;
+          document.getElementById('me-desc').value = e.desc || '';
+          document.getElementById('me-amount').value = e.amount;
+        } else {
+          document.getElementById('me-date').value = new Date().toISOString().slice(0, 10);
+          document.getElementById('me-desc').value = '';
+          document.getElementById('me-amount').value = '';
+        }
+        openModal('member-expense-modal');
+      }
+
+      function saveMemberExpense() {
+        const date = document.getElementById('me-date').value;
+        const desc = document.getElementById('me-desc').value.trim();
+        const amount = +document.getElementById('me-amount').value;
+        if (!date) { toast('Date required'); return; }
+        if (!desc) { toast('Description required'); return; }
+        if (!amount || amount <= 0) { toast('Amount must be > 0'); return; }
+        const id = document.getElementById('me-edit-id').value;
+        const memberId = document.getElementById('me-member-id').value;
+        const expenses = getMemberExpenses();
+        const obj = { id: id || uid(), memberId, date, desc, amount };
+        if (id) { const i = expenses.findIndex(e => e.id === id); expenses[i] = obj; }
+        else expenses.push(obj);
+        set('member_expenses', expenses);
+        closeModal('member-expense-modal');
+        renderMemberDetail();
+        if (activeMemberId && currentExpenseType === 'home') renderMemberDetailInline();
+        toast(id ? 'Karcha updated' : 'Karcha added ✓');
+      }
+
+      function deleteMemberExpense(id) {
+        if (!confirm('Delete this karcha?')) return;
+        set('member_expenses', getMemberExpenses().filter(e => e.id !== id));
+        renderMemberDetail();
+        toast('Karcha deleted');
+      }
+
+      // ── END MEMBER BUDGET ────────────────────────────────────────────────────
+
+      function setExpenseTab(btn, cat) {
+        document.querySelectorAll('.exp-tab').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-ghost'); });
+        btn.classList.add('btn-primary'); btn.classList.remove('btn-ghost');
+        renderExpenses();
+      }
+
+      // ── Expense Type Toggle ──────────────────────────────────────────────────
+      let currentExpenseType = 'business';
+
+      function setExpenseType(type) {
+        currentExpenseType = type;
+        const bizBtn = document.getElementById('exp-type-business');
+        const homeBtn = document.getElementById('exp-type-home');
+        const bizTabs = document.getElementById('expense-tabs-business');
+        const homeTabs = document.getElementById('expense-tabs-home');
+        if (!bizBtn || !homeBtn || !bizTabs || !homeTabs) return;
+
+        if (type === 'business') {
+          bizBtn.classList.add('btn-primary'); bizBtn.classList.remove('btn-ghost');
+          homeBtn.classList.remove('btn-primary'); homeBtn.classList.add('btn-ghost');
+          bizTabs.style.display = 'flex'; homeTabs.style.display = 'none';
+          const rashanSection = document.getElementById('rashan-section');
+          if (rashanSection) rashanSection.style.display = 'none';
+        } else {
+          homeBtn.classList.add('btn-primary'); homeBtn.classList.remove('btn-ghost');
+          bizBtn.classList.remove('btn-primary'); bizBtn.classList.add('btn-ghost');
+          homeTabs.style.display = 'flex'; bizTabs.style.display = 'none';
+          const rashanSection = document.getElementById('rashan-section');
+          if (rashanSection) { rashanSection.style.display = 'block'; renderRashanTable(); }
+        }
+        renderExpenses();
+      }
+
+      function setExpenseTabHome(btn, cat) {
+        document.querySelectorAll('.exp-tab-home').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-ghost'); });
+        btn.classList.add('btn-primary'); btn.classList.remove('btn-ghost');
+        renderExpenses();
+      }
+
+      function getActiveExpenseCatHome() {
+        const active = document.querySelector('.exp-tab-home.btn-primary');
+        return active ? active.dataset.cat : '';
+      }
+
+      function getActiveExpenseCat() {
+        const active = document.querySelector('.exp-tab.btn-primary');
+        return active ? active.dataset.cat : '';
+      }
+
+      function renderExpenses() {
+        const sq = (document.getElementById('expense-search').value || '').toLowerCase();
+        const cat = currentExpenseType === 'business' ? getActiveExpenseCat() : getActiveExpenseCatHome();
+        const month = document.getElementById('expense-month-filter').value;
+        let expenses = getExpenses().sort((a, b) => new Date(b.date) - new Date(a.date));
+        // Filter by type
+        expenses = expenses.filter(e => (e.type || 'business') === currentExpenseType);
+        if (sq) expenses = expenses.filter(e => (e.desc || '').toLowerCase().includes(sq) || (e.category || '').toLowerCase().includes(sq));
+        if (cat) expenses = expenses.filter(e => e.category === cat);
+        if (month) expenses = expenses.filter(e => e.date && e.date.slice(0, 7) === month);
+
+        // Summary
+        const total = expenses.reduce((a, e) => a + e.amount, 0);
+        const today = new Date().toISOString().slice(0, 10);
+        const todayTotal = expenses.filter(e => e.date === today).reduce((a, e) => a + e.amount, 0);
+        const thisMonth = new Date().toISOString().slice(0, 7);
+        const monthTotal = expenses.filter(e => e.date && e.date.slice(0, 7) === thisMonth).reduce((a, e) => a + e.amount, 0);
+        // Category breakdown
+        const catMap = {};
+        expenses.forEach(e => { catMap[e.category] = (catMap[e.category] || 0) + e.amount; });
+        const topCat = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
+
+        document.getElementById('expense-summary').innerHTML = `
+    <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:.75rem;padding:1rem;text-align:center">
+      <div style="font-size:1.1rem;font-weight:700;color:var(--danger)">₹${total.toLocaleString('en-IN')}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Total Karcha</div>
+    </div>
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:.75rem;padding:1rem;text-align:center">
+      <div style="font-size:1.1rem;font-weight:700;color:var(--accent)">₹${todayTotal.toLocaleString('en-IN')}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Aaj ka Karcha</div>
+    </div>
+    <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:.75rem;padding:1rem;text-align:center">
+      <div style="font-size:1.1rem;font-weight:700;color:#3B82F6">₹${monthTotal.toLocaleString('en-IN')}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Is Mahine ka Karcha</div>
+    </div>
+    ${topCat ? `<div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:.75rem;padding:1rem;text-align:center">
+      <div style="font-size:.9rem;font-weight:700;color:#8B5CF6">${topCat[0]}</div>
+      <div style="font-size:.75rem;color:var(--muted)">Top Category</div>
+    </div>`: ''}
+    ${Object.entries(catMap).sort((a, b) => b[1] - a[1]).map(([c, v]) => `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:.75rem;padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:.8rem;color:var(--muted)">${c}</span>
+      <span style="font-weight:700;color:var(--danger);font-size:.9rem">₹${v.toLocaleString('en-IN')}</span>
+    </div>`).join('')}`;
+
+        // Update table header for home/business types
+        const thead = document.querySelector('#page-expenses table thead');
+        if (thead) {
+          if (currentExpenseType === 'home') {
+            thead.innerHTML = `<tr>
+                <th>Date</th>
+                <th>Member</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount (₹)</th>
+                <th>Actions</th>
+              </tr>`;
+          } else {
+            thead.innerHTML = `<tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount (₹)</th>
+                <th>Actions</th>
+              </tr>`;
+          }
+        }
+
+        document.getElementById('expenses-body').innerHTML = expenses.length ? expenses.map(e => {
+          const memberName = (e.memberId && (getMembers().find(m => m.id === e.memberId) || {}).name) || '';
+          if (currentExpenseType === 'home') {
+            return `
+    <tr>
+      <td>${e.date}</td>
+      <td>${memberName || '—'}</td>
+      <td><span class="badge badge-orange">${e.category}</span></td>
+      <td>${e.desc || '—'}</td>
+      <td style="font-weight:600;color:var(--danger)">₹${e.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openExpenseModal('${e.id}')">Edit</button>
+        <button class="btn btn-ghost btn-sm" style="margin-left:.3rem;color:var(--danger)" onclick="removeExpenseMember('${e.id}')">Remove member</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:.3rem" onclick="deleteExpense('${e.id}')">Del</button>
+      </td>
+    </tr>`;
+          }
+          return `
+    <tr>
+      <td>${e.date}</td>
+      <td><span class="badge badge-orange">${e.category}</span></td>
+      <td>${e.desc || '—'}</td>
+      <td style="font-weight:600;color:var(--danger)">₹${e.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openExpenseModal('${e.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:.3rem" onclick="deleteExpense('${e.id}')">Del</button>
+      </td>
+    </tr>`;
+        }).join('') : (currentExpenseType === 'home'
+          ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Koi karcha nahi</td></tr>'
+          : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Koi karcha nahi</td></tr>');
+      }
+
+      // ── MACHINES ──────────────────────────────────────────────────────────────────
+      function getMachines() { return get('machines'); }
+      function getMachineLogs() { return get('machine_logs'); }
+      function getStaff() { return get('staff'); }
+      function getSalaryHistory() { return get('salary_history'); }
+
+      const machineStatusColor = {
+        'Running': '#22C55E', 'Idle': '#F59E0B', 'Maintenance': '#3B82F6', 'Breakdown': '#EF4444'
+      };
+      const machineStatusBg = {
+        'Running': 'rgba(34,197,94,.1)', 'Idle': 'rgba(245,158,11,.1)', 'Maintenance': 'rgba(59,130,246,.1)', 'Breakdown': 'rgba(239,68,68,.1)'
+      };
+
+      function openMachineModal(id) {
+        document.getElementById('machine-edit-id').value = id || '';
+        document.getElementById('machine-modal-title').textContent = id ? 'Edit Machine' : 'Add Machine';
+        // Populate operator checkboxes from staff
+        const staff = getStaff();
+        const selectedIds = id ? (getMachines().find(x => x.id === id)?.operatorIds || []) : [];
+        document.getElementById('m-operators-list').innerHTML = staff.length
+          ? staff.map(s => `<label style="display:flex;align-items:center;gap:.5rem;padding:.25rem .35rem;cursor:pointer;border-radius:.3rem" onmouseover="this.style.background='rgba(245,158,11,.08)'" onmouseout="this.style.background=''">
+        <input type="checkbox" value="${s.id}" ${selectedIds.includes(s.id) ? 'checked' : ''} style="width:auto;accent-color:var(--accent)"/>
+        <span>${s.name} <span style="color:var(--muted);font-size:.75rem">(${s.role})</span></span>
+      </label>`).join('')
+          : '<span style="color:var(--muted);font-size:.8rem">No staff added yet</span>';
+        // Populate order dropdown
+        const orders = get('orders').filter(o => o.status !== 'Completed');
+        const workSel = document.getElementById('m-work');
+        workSel.innerHTML = '<option value="">None / Manual entry</option>' +
+          orders.map(o => `<option value="${o.orderId}">${o.orderId} — ${o.customerName} (${o.design || 'No design'})</option>`).join('');
+        if (id) {
+          const m = getMachines().find(x => x.id === id);
+          document.getElementById('m-name').value = m.name;
+          document.getElementById('m-type').value = m.type;
+          document.getElementById('m-status').value = m.status;
+          document.getElementById('m-work').value = m.orderId || '';
+          document.getElementById('m-work-manual').value = m.currentWork || '';
+          document.getElementById('m-purchase').value = m.purchaseDate || '';
+          document.getElementById('m-service').value = m.lastService || '';
+          document.getElementById('m-note').value = m.note || '';
+        } else {
+          ['m-work-manual', 'm-purchase', 'm-service', 'm-note'].forEach(i => document.getElementById(i).value = '');
+          document.getElementById('m-name').value = '';
+          document.getElementById('m-status').value = 'Idle';
+          document.getElementById('m-work').value = '';
+        }
+        openModal('machine-modal');
+      }
+
+      function saveMachine() {
+        const name = document.getElementById('m-name').value.trim();
+        if (!name) { toast('Machine name is required'); return; }
+        const id = document.getElementById('machine-edit-id').value;
+        const machines = getMachines();
+        const selectedOrderId = document.getElementById('m-work').value;
+        const manualWork = document.getElementById('m-work-manual').value.trim();
+        let currentWork = manualWork;
+        if (selectedOrderId) {
+          const order = get('orders').find(o => o.orderId === selectedOrderId);
+          currentWork = order ? `${order.orderId} — ${order.customerName} (${order.design || 'No design'})` : selectedOrderId;
+        }
+        const opCheckboxes = document.querySelectorAll('#m-operators-list input[type=checkbox]:checked');
+        const operatorIds = Array.from(opCheckboxes).map(cb => cb.value);
+        const operatorNames = operatorIds.map(id => getStaff().find(s => s.id === id)?.name || '').filter(Boolean);
+        const obj = {
+          id: id || uid(), name, type: document.getElementById('m-type').value,
+          status: document.getElementById('m-status').value,
+          operatorIds, operatorNames,
+          operatorName: operatorNames.join(', '),
+          orderId: selectedOrderId,
+          currentWork,
+          purchaseDate: document.getElementById('m-purchase').value,
+          lastService: document.getElementById('m-service').value,
+          note: document.getElementById('m-note').value.trim()
+        };
+        if (id) { const i = machines.findIndex(m => m.id === id); machines[i] = obj; }
+        else machines.push(obj);
+        set('machines', machines);
+        closeModal('machine-modal');
+        renderMachinesPage();
+        toast(id ? 'Machine updated' : 'Machine added');
+      }
+
+      function deleteMachine(id) {
+        if (!confirm('Delete this machine?')) return;
+        set('machines', getMachines().filter(m => m.id !== id));
+        renderMachinesPage();
+        toast('Machine deleted');
+      }
+
+      function openLogModal(machineId) {
+        const el = document.getElementById('log-machine-id');
+        if (!el) { toast('Error: Log modal not found. Please refresh.'); return; }
+        el.value = machineId;
+        document.getElementById('log-work').value = '';
+        document.getElementById('log-note').value = '';
+        document.getElementById('log-status').value = 'In Progress';
+        const now = new Date().toISOString().slice(0, 16);
+        document.getElementById('log-start').value = now;
+        document.getElementById('log-end').value = '';
+        const modal = document.getElementById('machine-log-modal');
+        modal.style.display = 'flex';
+        modal.classList.add('open');
+      }
+
+      function saveMachineLog() {
+        const machineId = document.getElementById('log-machine-id').value;
+        const work = document.getElementById('log-work').value.trim();
+        if (!work) { toast('Work description is required'); return; }
+        const machines = getMachines();
+        const machineIdx = machines.findIndex(m => m.id === machineId);
+        const machineName = machineIdx >= 0 ? machines[machineIdx].name : '';
+        const logs = getMachineLogs();
+        const logStatus = document.getElementById('log-status').value;
+        logs.push({
+          id: uid(), machineId, machineName,
+          work, start: document.getElementById('log-start').value,
+          end: document.getElementById('log-end').value,
+          status: logStatus,
+          note: document.getElementById('log-note').value.trim(),
+          date: new Date().toISOString().slice(0, 10)
+        });
+        set('machine_logs', logs);
+        if (machineIdx >= 0) {
+          machines[machineIdx].currentWork = work;
+          machines[machineIdx].status = logStatus === 'Completed' ? 'Idle' : 'Running';
+          set('machines', machines);
+        }
+        closeModal('machine-log-modal');
+        document.getElementById('machine-log-modal').style.display = 'none';
+        renderMachinesPage();
+        toast('Work log added');
+      }
+
+      function renderMachinesPage() {
+        const sq = (document.getElementById('machine-search') ? document.getElementById('machine-search').value || '' : '').toLowerCase();
+        const allMachines = getMachines();
+        let machines = allMachines;
+        if (sq) machines = machines.filter(m => (m.name || '').toLowerCase().includes(sq) || (m.type || '').toLowerCase().includes(sq) || (m.currentWork || '').toLowerCase().includes(sq));
+        // Status cards always show all machines count
+        const counts = { Running: 0, Idle: 0, Maintenance: 0, Breakdown: 0 };
+        allMachines.forEach(m => counts[m.status] = (counts[m.status] || 0) + 1);
+        document.getElementById('machine-cards').innerHTML =
+          Object.entries(counts).map(([s, c]) => `
+      <div style="background:${machineStatusBg[s]};border:1px solid ${machineStatusColor[s]}40;border-radius:.75rem;padding:1rem;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:${machineStatusColor[s]}">${c}</div>
+        <div style="font-size:.8rem;color:var(--muted)">${s}</div>
+      </div>`).join('');
+
+        // Table
+        document.getElementById('machines-body').innerHTML = machines.length ? machines.map(m => `
+    <tr>
+      <td style="font-weight:600">${m.name}</td>
+      <td>${m.type}</td>
+      <td><span class="badge" style="background:${machineStatusBg[m.status]};color:${machineStatusColor[m.status]}">${m.status}</span></td>
+      <td>${m.currentWork || '—'}</td>
+      <td>${m.operatorName || '—'}</td>
+      <td>${m.lastService || '—'}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openLogModal('${m.id}')">+ Log</button>
+        <button class="btn btn-ghost btn-sm" style="margin-left:.3rem" onclick="openMachineModal('${m.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:.3rem" onclick="deleteMachine('${m.id}')">Del</button>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No machines added yet</td></tr>';
+
+        // Log filter dropdown
+        document.getElementById('machine-log-filter').innerHTML =
+          '<option value="">All Machines</option>' +
+          machines.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        renderMachineLog();
+      }
+
+      function renderMachineLog() {
+        const filter = document.getElementById('machine-log-filter').value;
+        let logs = getMachineLogs().sort((a, b) => new Date(b.start || b.date) - new Date(a.start || a.date));
+        if (filter) logs = logs.filter(l => l.machineId === filter);
+        const statusColor = { 'In Progress': 'badge-blue', 'Completed': 'badge-green', 'Paused': 'badge-yellow' };
+        document.getElementById('machine-log-body').innerHTML = logs.length ? logs.map(l => `
+    <tr>
+      <td style="font-weight:600">${l.machineName}</td>
+      <td>${l.work}</td>
+      <td>${l.start ? l.start.replace('T', ' ') : '—'}</td>
+      <td>${l.end ? l.end.replace('T', ' ') : '—'}</td>
+      <td><span class="badge ${statusColor[l.status] || 'badge-yellow'}">${l.status}</span></td>
+      <td>${l.note || '—'}</td>
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">No work logs yet</td></tr>';
+      }
+
+      // ── STAFF & SALARY ────────────────────────────────────────────────────────────
+
+      function clearSalaryHistory() {
+        if (!confirm('Saari salary & advance history delete karo?\n\nStaff members safe rahenge, sirf history delete hogi.')) return;
+        set('salary_history', []);
+        renderStaffPage();
+        toast('Salary history clear ho gayi ✓');
+      }
+
+      function clearAllStaff() {
+        if (!confirm('Saare staff members aur unki salary history delete karo?\n\nYeh action undo nahi ho sakta.')) return;
+        set('staff', []);
+        set('salary_history', []);
+        renderStaffPage();
+        toast('Saara staff data clear ho gaya ✓');
+      }
+
+      function openStaffModal(id) {
+        document.getElementById('staff-edit-id').value = id || '';
+        document.getElementById('staff-modal-title').textContent = id ? 'Edit Staff' : 'Add Staff';
+        if (id) {
+          const s = getStaff().find(x => x.id === id);
+          document.getElementById('st-name').value = s.name;
+          document.getElementById('st-role').value = s.role;
+          document.getElementById('st-salary').value = s.salary;
+          document.getElementById('st-phone').value = s.phone || '';
+          document.getElementById('st-join').value = s.join || '';
+        } else {
+          ['st-name', 'st-phone', 'st-join'].forEach(i => document.getElementById(i).value = '');
+          document.getElementById('st-salary').value = '';
+          document.getElementById('st-role').value = 'Embroidery Worker';
+        }
+        openModal('staff-modal');
+      }
+
+      function saveStaff() {
+        const name = document.getElementById('st-name').value.trim();
+        const salary = +document.getElementById('st-salary').value;
+        if (!name) { toast('Name is required'); return; }
+        if (!salary || salary <= 0) { toast('Salary must be > 0'); return; }
+        const id = document.getElementById('staff-edit-id').value;
+        const staff = getStaff();
+        const obj = { id: id || uid(), name, role: document.getElementById('st-role').value, salary, phone: document.getElementById('st-phone').value.trim(), join: document.getElementById('st-join').value };
+        if (id) { const i = staff.findIndex(s => s.id === id); staff[i] = obj; }
+        else staff.push(obj);
+        set('staff', staff);
+        closeModal('staff-modal');
+        renderStaffPage();
+        toast(id ? 'Staff updated' : 'Staff added');
+      }
+
+      function deleteStaff(id) {
+        if (!confirm('Delete this staff member?')) return;
+        set('staff', getStaff().filter(s => s.id !== id));
+        renderStaffPage();
+        toast('Staff deleted');
+      }
+
+      function populateStaffDropdowns() {
+        const staff = getStaff();
+        const opts = '<option value="">Select staff…</option>' + staff.map(s => `<option value="${s.id}">${s.name} (₹${s.salary}/mo)</option>`).join('');
+        document.getElementById('sal-staff-select').innerHTML = opts;
+        document.getElementById('adv-staff-select').innerHTML = opts;
+        const filterOpts = '<option value="">All Staff</option>' + staff.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        document.getElementById('staff-history-filter').innerHTML = filterOpts;
+      }
+
+      function paySalary() {
+        const staffId = document.getElementById('sal-staff-select').value;
+        const amount = +document.getElementById('sal-amount').value;
+        const month = document.getElementById('sal-month').value;
+        if (!staffId) { toast('Select a staff member'); return; }
+        if (!amount || amount <= 0) { toast('Amount must be > 0'); return; }
+        if (!month) { toast('Select month'); return; }
+        const staff = getStaff().find(s => s.id === staffId);
+        const history = getSalaryHistory();
+        history.push({ id: uid(), staffId, staffName: staff.name, type: 'Salary', amount, month, date: new Date().toISOString().slice(0, 10), note: document.getElementById('sal-note').value.trim() });
+        set('salary_history', history);
+        document.getElementById('sal-amount').value = '';
+        document.getElementById('sal-note').value = '';
+        renderStaffHistory();
+        toast(`Salary ₹${amount} paid to ${staff.name}`);
+      }
+
+      function giveAdvance() {
+        const staffId = document.getElementById('adv-staff-select').value;
+        const amount = +document.getElementById('adv-amount').value;
+        const date = document.getElementById('adv-date').value;
+        if (!staffId) { toast('Select a staff member'); return; }
+        if (!amount || amount <= 0) { toast('Amount must be > 0'); return; }
+        if (!date) { toast('Select date'); return; }
+        const staff = getStaff().find(s => s.id === staffId);
+        const history = getSalaryHistory();
+        history.push({ id: uid(), staffId, staffName: staff.name, type: 'Advance', amount, month: '', date, note: document.getElementById('adv-reason').value.trim() });
+        set('salary_history', history);
+        document.getElementById('adv-amount').value = '';
+        document.getElementById('adv-reason').value = '';
+        renderStaffHistory();
+        toast(`Advance ₹${amount} given to ${staff.name}`);
+      }
+
+      function renderStaffPage() {
+        const sq = (document.getElementById('staff-search') ? document.getElementById('staff-search').value || '' : '').toLowerCase();
+        let staff = getStaff();
+        if (sq) staff = staff.filter(s => (s.name || '').toLowerCase().includes(sq) || (s.role || '').toLowerCase().includes(sq) || (s.phone || '').includes(sq));
+        document.getElementById('staff-body').innerHTML = staff.length ? staff.map(s => `
+    <tr>
+      <td style="font-weight:600">${s.name}</td>
+      <td>${s.role}</td>
+      <td>₹${s.salary.toLocaleString('en-IN')}</td>
+      <td>${s.phone || '—'}</td>
+      <td>${s.join || '—'}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openStaffModal('${s.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:.3rem" onclick="deleteStaff('${s.id}')">Delete</button>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">No staff added yet</td></tr>';
+        populateStaffDropdowns();
+        // Set default month and date
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById('adv-date').value = today;
+        document.getElementById('sal-month').value = today.slice(0, 7);
+        renderStaffHistory();
+      }
+
+      function renderStaffHistory() {
+        const filter = document.getElementById('staff-history-filter').value;
+        let history = getSalaryHistory().sort((a, b) => new Date(b.date) - new Date(a.date));
+        if (filter) history = history.filter(h => h.staffId === filter);
+        document.getElementById('staff-history-body').innerHTML = history.length ? history.map(h => `
+    <tr>
+      <td style="font-weight:600">${h.staffName}</td>
+      <td><span class="badge ${h.type === 'Salary' ? 'badge-green' : 'badge-orange'}">${h.type}</span></td>
+      <td>₹${h.amount.toLocaleString('en-IN')}</td>
+      <td>${h.type === 'Salary' ? h.month : h.date}</td>
+      <td>${h.note || '—'}</td>
+    </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">No records yet</td></tr>';
+
+        // Summary
+        const totalSalary = history.filter(h => h.type === 'Salary').reduce((a, h) => a + h.amount, 0);
+        const totalAdvance = history.filter(h => h.type === 'Advance').reduce((a, h) => a + h.amount, 0);
+        document.getElementById('staff-summary').innerHTML = `
+    <div style="display:flex;gap:2rem;flex-wrap:wrap">
+      <div>💰 Total Salary Paid: <strong>₹${totalSalary.toLocaleString('en-IN')}</strong></div>
+      <div>⬆️ Total Advance Given: <strong>₹${totalAdvance.toLocaleString('en-IN')}</strong></div>
+      <div>📊 Total Expense: <strong>₹${(totalSalary + totalAdvance).toLocaleString('en-IN')}</strong></div>
+    </div>`;
+      }
+
+      // ── BUSINESS SETTINGS ────────────────────────────────────────────────────────
+      function getBizSettings() {
+        const cached = _cache[_userKey + 'biz'];
+        if (cached) return cached;
+        return JSON.parse(localStorage.getItem(_userKey + 'biz') || '{"name":"EmbroideryBill","logo":"","address":"","phone":""}');
+      }
+      function setBizSettings(s) {
+        _cache[_userKey + 'biz'] = s;
+        setAsync('biz', s);
+        try { localStorage.setItem(_userKey + 'biz', JSON.stringify(s)); } catch { }
+        if (typeof saveToRTDB === 'function') saveToRTDB('biz', s);
+      }
+
+      function openLogoSettings() {
+        const s = getBizSettings();
+        document.getElementById('biz-name-input').value = s.name || '';
+        document.getElementById('biz-address-input').value = s.address || '';
+        document.getElementById('biz-phone-input').value = s.phone || '';
+        const prev = document.getElementById('logo-preview');
+        if (s.logo) { prev.innerHTML = `<img src="${s.logo}" style="width:100%;height:100%;object-fit:contain"/>`; prev.dataset.logo = s.logo; }
+        else { prev.innerHTML = '🧵'; prev.dataset.logo = ''; }
+        openModal('logo-modal');
+        showStorageInfo();
+      }
+
+      async function showStorageInfo() {
+        const info = document.getElementById('storage-info');
+        const bar = document.getElementById('storage-bar');
+        if (!info) return;
+        try {
+          if (navigator.storage && navigator.storage.estimate) {
+            const est = await navigator.storage.estimate();
+            const used = (est.usage || 0);
+            const quota = (est.quota || 0);
+            const usedMB = (used / 1024 / 1024).toFixed(2);
+            const quotaMB = (quota / 1024 / 1024 / 1024).toFixed(1);
+            const pct = quota > 0 ? Math.min((used / quota) * 100, 100) : 0;
+            info.innerHTML = `Used: <b>${usedMB} MB</b> / Available: <b>${quotaMB} GB</b> (${pct.toFixed(1)}% used)`;
+            bar.style.width = pct + '%';
+            bar.style.background = pct > 80 ? '#EF4444' : pct > 50 ? '#F59E0B' : '#3B82F6';
+          } else {
+            // Fallback: estimate from localStorage
+            let total = 0;
+            for (const k in localStorage) { if (localStorage.hasOwnProperty(k)) total += localStorage[k].length * 2; }
+            info.innerHTML = `localStorage used: <b>${(total / 1024).toFixed(1)} KB</b>`;
+            bar.style.width = Math.min((total / (5 * 1024 * 1024)) * 100, 100) + '%';
+          }
+        } catch { info.innerHTML = 'Storage info unavailable'; }
+      }
+
+      function handleLogoUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) { toast('Image too large — max 2MB'); return; }
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const prev = document.getElementById('logo-preview');
+          prev.innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:contain"/>`;
+          prev.dataset.logo = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function removeLogo() {
+        const prev = document.getElementById('logo-preview');
+        prev.innerHTML = '🧵';
+        prev.dataset.logo = '';
+      }
+
+      function saveLogoSettings() {
+        const prev = document.getElementById('logo-preview');
+        const existing = getBizSettings().logo || '';
+        const logo = prev.dataset.logo !== undefined ? prev.dataset.logo : existing;
+        const s = {
+          name: document.getElementById('biz-name-input').value.trim() || 'EmbroideryBill',
+          logo: logo,
+          address: document.getElementById('biz-address-input').value.trim(),
+          phone: document.getElementById('biz-phone-input').value.trim()
+        };
+        setBizSettings(s);
+        applyBizSettings(s);
+        closeModal('logo-modal');
+        toast('Business settings saved');
+      }
+
+      function clearAllData() {
+        if (!confirm('Pakka? Saara data delete ho jayega!\n\nCustomers, Orders, Payments, Staff, Machines, Salary history — sab kuch.\n\nYeh action undo nahi ho sakta.')) return;
+        const confirmText = prompt('Confirm karne ke liye "DELETE" type karo:');
+        if (confirmText !== 'DELETE') { toast('Clear cancelled'); return; }
+        ['customers', 'orders', 'payments', 'staff', 'salary_history', 'machines', 'machine_logs'].forEach(k => localStorage.removeItem(_userKey + k));
+        closeModal('logo-modal');
+        renderDashboard();
+        toast('Saara data clear ho gaya ✓', 3000);
+      }
+
+      function applyBizSettings(s) {
+        document.getElementById('sidebar-biz-name').textContent = s.name;
+        const wrap = document.getElementById('sidebar-logo-wrap');
+        if (s.logo) { wrap.innerHTML = `<img src="${s.logo}" style="width:100%;height:100%;object-fit:contain"/>`; }
+        else { wrap.innerHTML = '🧵'; }
+      }
+
+      // ── AUTH (Firebase) ──────────────────────────────────────────────────────
+
+      function showLogin() {
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('signup-form').style.display = 'none';
+        document.getElementById('login-error').style.display = 'none';
+      }
+      function showSignup() {
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('signup-form').style.display = 'block';
+        document.getElementById('signup-error').style.display = 'none';
+      }
+
+      // ── LOCAL AUTH HELPERS (fallback) ──────────────────────────────────────
+      function _getLocalUsers() { return JSON.parse(localStorage.getItem('eb_users') || '[]'); }
+      function _setLocalUsers(u) { localStorage.setItem('eb_users', JSON.stringify(u)); }
+      function _getLocalSession() { return JSON.parse(localStorage.getItem('eb_session') || 'null'); }
+      function _setLocalSession(u) { localStorage.setItem('eb_session', JSON.stringify(u)); }
+      function _clearLocalSession() { localStorage.removeItem('eb_session'); }
+
+      function _localLogin(email, password) {
+        const users = _getLocalUsers();
+        return users.find(u => u.email === email && u.password === password) || null;
+      }
+
+      function _localSignup(name, email, password, role) {
+        const users = _getLocalUsers();
+        if (users.find(u => u.email === email)) return null; // already exists
+        const user = { id: uid(), name, email, password, role };
+        users.push(user);
+        _setLocalUsers(users);
+        return user;
+      }
+
+      // ── OLD DATA MIGRATION ───────────────────────────────────────────────────
+      function _migrateOldData(currentKey) {
+        const dataKeys = ['customers', 'orders', 'payments', 'staff', 'salary_history', 'machines', 'machine_logs', 'inventory', 'expenses', 'members', 'member_expenses', 'rashan'];
+        // Check if current user already has data
+        const hasData = dataKeys.some(k => {
+          try { return JSON.parse(localStorage.getItem(currentKey + k) || '[]').length > 0; } catch { return false; }
+        });
+        if (hasData) return;
+
+        // Find all old prefixes in localStorage
+        const allLsKeys = Object.keys(localStorage);
+        const prefixes = new Set();
+        allLsKeys.forEach(lk => {
+          dataKeys.forEach(dk => {
+            if (lk.endsWith(dk) && lk !== currentKey + dk) {
+              prefixes.add(lk.slice(0, lk.length - dk.length));
+            }
+          });
+        });
+
+        // Try each old prefix — pick one with most data
+        for (const prefix of prefixes) {
+          try {
+            const oldOrders = JSON.parse(localStorage.getItem(prefix + 'orders') || '[]');
+            if (oldOrders.length > 0) {
+              dataKeys.forEach(k => {
+                const v = localStorage.getItem(prefix + k);
+                if (v) localStorage.setItem(currentKey + k, v);
+              });
+              const oldBiz = localStorage.getItem(prefix + 'biz');
+              if (oldBiz) localStorage.setItem(currentKey + 'biz', oldBiz);
+              setTimeout(() => toast('✅ Purana data mil gaya aur migrate ho gaya!'), 500);
+              return;
+            }
+          } catch { }
+        }
+      }
+      function doLogin() {
+        const email = document.getElementById('login-email').value.trim().toLowerCase();
+        const password = document.getElementById('login-password').value;
+        const err = document.getElementById('login-error');
+        if (!email || !password) { err.textContent = 'Email and password required.'; err.style.display = 'block'; return; }
+        const user = _localLogin(email, password);
+        if (user) { _setLocalSession(user); startApp(user); }
+        else { err.textContent = 'Invalid email or password.'; err.style.display = 'block'; }
+      }
+
+      function doSignup() {
+        const name = document.getElementById('signup-name').value.trim();
+        const email = document.getElementById('signup-email').value.trim().toLowerCase();
+        const password = document.getElementById('signup-password').value;
+        const role = document.getElementById('signup-role').value;
+        const err = document.getElementById('signup-error');
+        if (!name || !email || !password) { err.textContent = 'All fields required.'; err.style.display = 'block'; return; }
+        if (password.length < 6) { err.textContent = 'Password min 6 characters.'; err.style.display = 'block'; return; }
+        const user = _localSignup(name, email, password, role);
+        if (user) { _setLocalSession(user); startApp(user); }
+        else { err.textContent = 'Email already registered.'; err.style.display = 'block'; }
+      }
+
+      function doLogout() {
+        _clearLocalSession();
+        location.reload();
+      }
+
+      // ── RTDB SYNC (background only) ──────────────────────────────────────────
+      let _rtdbUid = '';
+      const _syncKeys = ['customers', 'orders', 'payments', 'staff', 'salary_history', 'machines', 'machine_logs', 'inventory', 'expenses', 'members', 'member_expenses', 'rashan', 'biz'];
+
+      async function saveToRTDB(k, v) {
+        if (!_rtdbUid || !window._fbRtDb || !window._fbFns) return;
+        try {
+          const { ref, dbSet } = window._fbFns;
+          await dbSet(ref(window._fbRtDb, 'users/' + _rtdbUid + '/' + k), JSON.stringify(v));
+        } catch (e) { }
+      }
+
+      async function loadAllFromRTDB() {
+        if (!_rtdbUid || !window._fbRtDb || !window._fbFns) return;
+        try {
+          const { ref, dbGet } = window._fbFns;
+          for (const k of _syncKeys) {
+            const snap = await dbGet(ref(window._fbRtDb, 'users/' + _rtdbUid + '/' + k));
+            if (snap.exists()) {
+              const val = JSON.parse(snap.val() || '[]');
+              _cache[_userKey + k] = val;
+            }
+          }
+        } catch (e) { }
+      }
+
+      function startRealtimeSync() {
+        if (!_rtdbUid || !window._fbRtDb || !window._fbFns) return;
+        const { ref, onValue } = window._fbFns;
+        _syncKeys.forEach(k => {
+          onValue(ref(window._fbRtDb, 'users/' + _rtdbUid + '/' + k), snap => {
+            if (snap.exists()) {
+              try { _cache[_userKey + k] = JSON.parse(snap.val() || '[]'); } catch { }
+            }
+          });
+        });
+      }
+
+      function startApp(user) {
+        _userKey = 'u_' + user.email + '_';
+
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('sidebar').style.display = 'flex';
+        document.getElementById('topbar').style.display = 'flex';
+        document.getElementById('main').style.display = 'block';
+
+        // Migrate old data if new account has no data
+        _migrateOldData(_userKey);
+
+        loadAllFromDB().then(() => {
+          applyBizSettings(getBizSettings());
+          const displayName = user.name || user.displayName || user.email;
+          const role = user.role || 'admin';
+          document.getElementById('topbar-user').innerHTML =
+            `<span style="font-weight:600">${displayName}</span>
+             <span style="background:rgba(245,158,11,.2);color:#F59E0B;font-size:.7rem;padding:.15rem .5rem;border-radius:999px;margin-left:.35rem">${role}</span>`;
+          const reportsLink = document.querySelector('[data-page="reports"]');
+          const staffLink = document.querySelector('[data-page="staff"]');
+          if (reportsLink) reportsLink.style.display = role === 'staff' ? 'none' : 'flex';
+          if (staffLink) staffLink.style.display = role === 'staff' ? 'none' : 'flex';
+          renderDashboard();
+        });
+      }
+
+      // ── RIPPLE EFFECT ────────────────────────────────────────────────────────
+      document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn');
+        if (!btn) return;
+        const r = document.createElement('span');
+        r.className = 'ripple';
+        const rect = btn.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - rect.left - size / 2}px;top:${e.clientY - rect.top - size / 2}px`;
+        btn.appendChild(r);
+        setTimeout(() => r.remove(), 500);
+      });
+
+      // ── INIT ────────────────────────────────────────────────────────────────
+      (function init() {
+        document.getElementById('sidebar').style.display = 'none';
+        document.getElementById('topbar').style.display = 'none';
+        document.getElementById('main').style.display = 'none';
+        const session = _getLocalSession();
+        if (session) { startApp(session); }
+        else { document.getElementById('auth-screen').style.display = 'flex'; }
+      })();
+    </script>
+</body>
+
+</html>
